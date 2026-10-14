@@ -1,0 +1,7 @@
+.clasprc.json
+.clasp.json
+node_modules/
+*.inspect.ndjson
+*.env
+.env*
+private/
