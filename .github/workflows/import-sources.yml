@@ -1,0 +1,41 @@
+name: Importer les sources vérifiées
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extraire les sources
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          with ZipFile('sources-import.zip') as archive:
+              for item in archive.infolist():
+                  path = Path(item.filename)
+                  if path.parts[0] != 'beauregard-vehicules' or '..' in path.parts or path.is_absolute():
+                      raise ValueError('Chemin interdit')
+                  target = Path(*path.parts[1:])
+                  if item.is_dir() or str(target).startswith('.github/'):
+                      continue
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(archive.read(item))
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier les tests et le cache
+        run: |
+          node --test tests/*.test.cjs
+          node scripts/build-cache.cjs
+      - name: Enregistrer les fichiers extraits
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm sources-import.zip
+          git add backend docs frontend scripts tests README.md CHANGELOG.md .gitignore
+          git commit -m 'Importer les sources Véhicules après vérification des tests'
+          git push
