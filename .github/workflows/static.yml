@@ -1,0 +1,42 @@
+
+name: Publier Beauregard Véhicules
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Récupérer les fichiers
+        uses: actions/checkout@v4
+
+      - name: Vérifier la configuration
+        run: |
+          test -f frontend/index.html
+          test -f frontend/config.js
+          grep -q "script.google.com/macros/s/" frontend/config.js
+
+      - name: Préparer GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Préparer les fichiers du site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./frontend
+
+      - name: Publier le site
+        id: deployment
+        uses: actions/deploy-pages@v4
