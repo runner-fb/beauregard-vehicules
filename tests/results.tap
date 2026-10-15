@@ -1,0 +1,208 @@
+TAP version 13
+# Subtest: connexion contrôleur, identité obligatoire, code incorrect, administrateur séparé
+ok 1 - connexion contrôleur, identité obligatoire, code incorrect, administrateur séparé
+  ---
+  duration_ms: 6.043443
+  type: 'test'
+  ...
+# Subtest: expiration et révocation des sessions
+ok 2 - expiration et révocation des sessions
+  ---
+  duration_ms: 1.706653
+  type: 'test'
+  ...
+# Subtest: normalisation plaque et détection doublon; parallèle explicite
+ok 3 - normalisation plaque et détection doublon; parallèle explicite
+  ---
+  duration_ms: 2.896902
+  type: 'test'
+  ...
+# Subtest: création idempotente
+ok 4 - création idempotente
+  ---
+  duration_ms: 2.091812
+  type: 'test'
+  ...
+# Subtest: informations obligatoires : photo compteur, jauge, quatre vues, intérieur
+ok 5 - informations obligatoires : photo compteur, jauge, quatre vues, intérieur
+  ---
+  duration_ms: 0.566176
+  type: 'test'
+  ...
+# Subtest: kilométrage zéro accepté et valeurs négatives refusées
+ok 6 - kilométrage zéro accepté et valeurs négatives refusées
+  ---
+  duration_ms: 1.397516
+  type: 'test'
+  ...
+# Subtest: dommages quatre vues et intérieur; photo et description Autre obligatoires
+ok 7 - dommages quatre vues et intérieur; photo et description Autre obligatoires
+  ---
+  duration_ms: 0.562321
+  type: 'test'
+  ...
+# Subtest: modification, suppression et conservation de numéros
+ok 8 - modification, suppression et conservation de numéros
+  ---
+  duration_ms: 1.815493
+  type: 'test'
+  ...
+# Subtest: CAS : modifications concurrentes détectées sans écrasement
+ok 9 - CAS : modifications concurrentes détectées sans écrasement
+  ---
+  duration_ms: 1.371548
+  type: 'test'
+  ...
+# Subtest: fusion indépendante, conflit même champ, dommages distincts conservés
+ok 10 - fusion indépendante, conflit même champ, dommages distincts conservés
+  ---
+  duration_ms: 0.915533
+  type: 'test'
+  ...
+# Subtest: conflit suppression contre modification d’un dommage
+ok 11 - conflit suppression contre modification d’un dommage
+  ---
+  duration_ms: 0.31162
+  type: 'test'
+  ...
+# Subtest: finalisation bloquée par photo non synchronisée
+ok 12 - finalisation bloquée par photo non synchronisée
+  ---
+  duration_ms: 1.434981
+  type: 'test'
+  ...
+# Subtest: signature verrouille immédiatement les données
+ok 13 - signature verrouille immédiatement les données
+  ---
+  duration_ms: 1.761964
+  type: 'test'
+  ...
+# Subtest: deux signatures, clôture, interdiction de modification
+ok 14 - deux signatures, clôture, interdiction de modification
+  ---
+  duration_ms: 3.041896
+  type: 'test'
+  ...
+# Subtest: absence de signatures : clôture permise, motifs conservés
+ok 15 - absence de signatures : clôture permise, motifs conservés
+  ---
+  duration_ms: 1.781563
+  type: 'test'
+  ...
+# Subtest: un seul contrôle signé ou final par véhicule et type
+ok 16 - un seul contrôle signé ou final par véhicule et type
+  ---
+  duration_ms: 1.774072
+  type: 'test'
+  ...
+# Subtest: retour lié au départ et valeurs initiales; dommages initiaux immuables
+ok 17 - retour lié au départ et valeurs initiales; dommages initiaux immuables
+  ---
+  duration_ms: 1.598062
+  type: 'test'
+  ...
+# Subtest: retour sans prise en charge demande confirmation
+ok 18 - retour sans prise en charge demande confirmation
+  ---
+  duration_ms: 1.260723
+  type: 'test'
+  ...
+# Subtest: inchangé sans photo, aggravé et réparé avec nouvelle photo
+ok 19 - inchangé sans photo, aggravé et réparé avec nouvelle photo
+  ---
+  duration_ms: 0.283629
+  type: 'test'
+  ...
+# Subtest: présence antérieure déclarée requiert explication
+ok 20 - présence antérieure déclarée requiert explication
+  ---
+  duration_ms: 0.16204
+  type: 'test'
+  ...
+# Subtest: contestation vérifiée, identité et date imposées par serveur
+ok 21 - contestation vérifiée, identité et date imposées par serveur
+  ---
+  duration_ms: 1.373039
+  type: 'test'
+  ...
+# Subtest: archives administrateur uniquement, toujours lecture seule
+ok 22 - archives administrateur uniquement, toujours lecture seule
+  ---
+  duration_ms: 1.081499
+  type: 'test'
+  ...
+# Subtest: avenant indépendant, anciennes valeurs contrôlées, droit admin
+ok 23 - avenant indépendant, anciennes valeurs contrôlées, droit admin
+  ---
+  duration_ms: 1.219523
+  type: 'test'
+  ...
+# Subtest: auth serveur requise pour toute API métier
+ok 24 - auth serveur requise pour toute API métier
+  ---
+  duration_ms: 2.648234
+  type: 'test'
+  ...
+# Subtest: stockage Sheets : texte réparti sur plusieurs cellules sans interprétation de formule
+ok 25 - stockage Sheets : texte réparti sur plusieurs cellules sans interprétation de formule
+  ---
+  duration_ms: 4.794126
+  type: 'test'
+  ...
+# Subtest: hors ligne : aucune requête et conservation du brouillon
+ok 26 - hors ligne : aucune requête et conservation du brouillon
+  ---
+  duration_ms: 3.124338
+  type: 'test'
+  ...
+# Subtest: photo interrompue : reste locale, erreur visible, reprise idempotente puis données
+ok 27 - photo interrompue : reste locale, erreur visible, reprise idempotente puis données
+  ---
+  duration_ms: 3.113272
+  type: 'test'
+  ...
+# Subtest: nouvelle modification pendant sauvegarde : non écrasée, reste en attente
+ok 28 - nouvelle modification pendant sauvegarde : non écrasée, reste en attente
+  ---
+  duration_ms: 1.431676
+  type: 'test'
+  ...
+# Subtest: réponse de création tardive ne détruit pas une saisie plus récente
+ok 29 - réponse de création tardive ne détruit pas une saisie plus récente
+  ---
+  duration_ms: 1.453508
+  type: 'test'
+  ...
+# Subtest: conflit de champ : deux valeurs conservées et aucune clôture
+ok 30 - conflit de champ : deux valeurs conservées et aucune clôture
+  ---
+  duration_ms: 1.657149
+  type: 'test'
+  ...
+# Subtest: données sauvegardées avant demande de retrait distant
+ok 31 - données sauvegardées avant demande de retrait distant
+  ---
+  duration_ms: 1.369824
+  type: 'test'
+  ...
+# Subtest: duplication : aucun envoi de photos ni écrasement du contrôle distant
+ok 32 - duplication : aucun envoi de photos ni écrasement du contrôle distant
+  ---
+  duration_ms: 1.099716
+  type: 'test'
+  ...
+# Subtest: retrait interrompu après sauvegarde : conserve la file et réessaie
+ok 33 - retrait interrompu après sauvegarde : conserve la file et réessaie
+  ---
+  duration_ms: 1.79276
+  type: 'test'
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 136.715417

@@ -1,0 +1,1 @@
+window.VEHICLES_CONFIG=Object.freeze({apiUrl:'https://script.google.com/macros/s/AKfycbw-PR1yS-ctcVz4PpNAOzhSbj-nFs8WqYDF0zzF8vddHXDdpEJKwwjLovNXKPadf5ce_g/exec',edition:'2027',version:'1.0.0-candidate',requestTimeout:330000});

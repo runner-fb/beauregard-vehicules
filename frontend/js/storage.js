@@ -1,0 +1,4 @@
+const Storage=(()=>{let db;async function open(){if(db)return db;db=await new Promise((res,rej)=>{const r=indexedDB.open('beauregard-vehicles-2027',1);r.onupgradeneeded=()=>{for(const n of ['drafts','photos','meta'])r.result.createObjectStore(n,{keyPath:'id'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});return db;}
+ async function transaction(name,mode,action){await open();return new Promise((res,rej)=>{const t=db.transaction(name,mode),s=t.objectStore(name);let result;const r=action(s);if(r)r.onsuccess=()=>result=r.result;t.oncomplete=()=>res(result);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||Error('Enregistrement local interrompu'))})}
+ const get=(n,id)=>transaction(n,'readonly',s=>s.get(id)),all=n=>transaction(n,'readonly',s=>s.getAll()),put=(n,v)=>transaction(n,'readwrite',s=>s.put(v)),remove=(n,id)=>transaction(n,'readwrite',s=>s.delete(id));
+ return {open,get,all,put,remove};})();

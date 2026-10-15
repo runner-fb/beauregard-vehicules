@@ -1,0 +1,154 @@
+TAP version 13
+# Subtest: connexion contrôleur, identité obligatoire, code incorrect, administrateur séparé
+ok 1 - connexion contrôleur, identité obligatoire, code incorrect, administrateur séparé
+  ---
+  duration_ms: 5.668587
+  type: 'test'
+  ...
+# Subtest: expiration et révocation des sessions
+ok 2 - expiration et révocation des sessions
+  ---
+  duration_ms: 3.406037
+  type: 'test'
+  ...
+# Subtest: normalisation plaque et détection doublon; parallèle explicite
+ok 3 - normalisation plaque et détection doublon; parallèle explicite
+  ---
+  duration_ms: 3.73761
+  type: 'test'
+  ...
+# Subtest: création idempotente
+ok 4 - création idempotente
+  ---
+  duration_ms: 3.05841
+  type: 'test'
+  ...
+# Subtest: informations obligatoires : photo compteur, jauge, quatre vues, intérieur
+ok 5 - informations obligatoires : photo compteur, jauge, quatre vues, intérieur
+  ---
+  duration_ms: 0.547748
+  type: 'test'
+  ...
+# Subtest: kilométrage zéro accepté et valeurs négatives refusées
+ok 6 - kilométrage zéro accepté et valeurs négatives refusées
+  ---
+  duration_ms: 12.008154
+  type: 'test'
+  ...
+# Subtest: dommages quatre vues et intérieur; photo et description Autre obligatoires
+ok 7 - dommages quatre vues et intérieur; photo et description Autre obligatoires
+  ---
+  duration_ms: 3.772833
+  type: 'test'
+  ...
+# Subtest: modification, suppression et conservation de numéros
+ok 8 - modification, suppression et conservation de numéros
+  ---
+  duration_ms: 3.056756
+  type: 'test'
+  ...
+# Subtest: CAS : modifications concurrentes détectées sans écrasement
+ok 9 - CAS : modifications concurrentes détectées sans écrasement
+  ---
+  duration_ms: 3.219998
+  type: 'test'
+  ...
+# Subtest: fusion indépendante, conflit même champ, dommages distincts conservés
+ok 10 - fusion indépendante, conflit même champ, dommages distincts conservés
+  ---
+  duration_ms: 0.757867
+  type: 'test'
+  ...
+# Subtest: conflit suppression contre modification d’un dommage
+ok 11 - conflit suppression contre modification d’un dommage
+  ---
+  duration_ms: 0.507167
+  type: 'test'
+  ...
+# Subtest: finalisation bloquée par photo non synchronisée
+ok 12 - finalisation bloquée par photo non synchronisée
+  ---
+  duration_ms: 1.704222
+  type: 'test'
+  ...
+# Subtest: signature verrouille immédiatement les données
+ok 13 - signature verrouille immédiatement les données
+  ---
+  duration_ms: 2.220884
+  type: 'test'
+  ...
+# Subtest: deux signatures, clôture, interdiction de modification
+ok 14 - deux signatures, clôture, interdiction de modification
+  ---
+  duration_ms: 2.501868
+  type: 'test'
+  ...
+# Subtest: absence de signatures : clôture permise, motifs conservés
+ok 15 - absence de signatures : clôture permise, motifs conservés
+  ---
+  duration_ms: 1.489646
+  type: 'test'
+  ...
+# Subtest: un seul contrôle signé ou final par véhicule et type
+ok 16 - un seul contrôle signé ou final par véhicule et type
+  ---
+  duration_ms: 1.875275
+  type: 'test'
+  ...
+# Subtest: retour lié au départ et valeurs initiales; dommages initiaux immuables
+ok 17 - retour lié au départ et valeurs initiales; dommages initiaux immuables
+  ---
+  duration_ms: 1.477228
+  type: 'test'
+  ...
+# Subtest: retour sans prise en charge demande confirmation
+ok 18 - retour sans prise en charge demande confirmation
+  ---
+  duration_ms: 1.355058
+  type: 'test'
+  ...
+# Subtest: inchangé sans photo, aggravé et réparé avec nouvelle photo
+ok 19 - inchangé sans photo, aggravé et réparé avec nouvelle photo
+  ---
+  duration_ms: 0.404997
+  type: 'test'
+  ...
+# Subtest: présence antérieure déclarée requiert explication
+ok 20 - présence antérieure déclarée requiert explication
+  ---
+  duration_ms: 0.224361
+  type: 'test'
+  ...
+# Subtest: contestation vérifiée, identité et date imposées par serveur
+ok 21 - contestation vérifiée, identité et date imposées par serveur
+  ---
+  duration_ms: 1.099331
+  type: 'test'
+  ...
+# Subtest: archives administrateur uniquement, toujours lecture seule
+ok 22 - archives administrateur uniquement, toujours lecture seule
+  ---
+  duration_ms: 1.051861
+  type: 'test'
+  ...
+# Subtest: avenant indépendant, anciennes valeurs contrôlées, droit admin
+ok 23 - avenant indépendant, anciennes valeurs contrôlées, droit admin
+  ---
+  duration_ms: 1.483657
+  type: 'test'
+  ...
+# Subtest: auth serveur requise pour toute API métier
+ok 24 - auth serveur requise pour toute API métier
+  ---
+  duration_ms: 1.601942
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 196.745247
