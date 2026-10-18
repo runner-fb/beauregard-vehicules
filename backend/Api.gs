@@ -1,4 +1,31 @@
-function doGet(e){const origin=props_().getProperty('FRONTEND_ORIGIN');if(!origin||!/^https:\/\/[a-z0-9-]+\.github\.io$/.test(origin))return HtmlService.createHtmlOutput('Installation à terminer');const channel=String(e.parameter.channel||'');if(!/^[a-z0-9-]{36}$/.test(channel))return HtmlService.createHtmlOutput('Beauregard Véhicules — accès depuis l’application');const t=HtmlService.createTemplateFromFile('Bridge');t.origin=origin;t.channel=channel;return t.evaluate().setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)}
+/** Beauregard Véhicules — GET/JSON et pont HTML pour les photos et signatures. */
+function doGet(e) {
+  const params = (e && e.parameter) || {};
+  if (params.api === 'health') return jsonResponse_({ok:true,build:'1.0.1',transport:'get-json-and-bridge'});
+  if (params.api) {
+    const requestId = String(params.requestId || '');
+    try {
+      const p = JSON.parse(String(params.data || '{}'));
+      if (!p || typeof p !== 'object' || Array.isArray(p)) throw Error('Données invalides');
+      p.action = String(params.api);
+      p.token = String(params.token || '');
+      return jsonResponse_({...rpc(p),requestId});
+    } catch (err) { return jsonResponse_({ok:false,error:String(err.message || err),requestId}); }
+  }
+  const origin = props_().getProperty('FRONTEND_ORIGIN');
+  if (!origin || !/^https:\/\/[a-z0-9-]+\.github\.io$/.test(origin))
+    return HtmlService.createHtmlOutput('Installation à terminer');
+  const channel = String(params.channel || '');
+  if (!/^[a-z0-9-]{36}$/.test(channel))
+    return HtmlService.createHtmlOutput('Beauregard Véhicules — accès depuis l’application');
+  // Le projet existant utilise bridge.html ; accepte aussi les anciennes copies Bridge.html.
+  let t;
+  try { t=HtmlService.createTemplateFromFile('bridge'); }
+  catch (_) { t=HtmlService.createTemplateFromFile('Bridge'); }
+  t.origin=origin; t.channel=channel;
+  return t.evaluate().setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+function jsonResponse_(value) {return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);}
 function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000)throw Error('Requête invalide');if(p.action==='login')return {ok:true,data:login_(p)};const s=session_(p.token,p.action!=='identity');let data;
  if(p.action==='read')data=record_(s,p.id,false);
  else if(p.action==='list'){const ed=p.edition||active_();editionAccess_(s,ed,false);data=rows_('Records').filter(r=>r.edition===ed).map(r=>({...r,data:{vehicle:r.data.vehicle},progress:Model.progress(r.data,r.kind)}));}
