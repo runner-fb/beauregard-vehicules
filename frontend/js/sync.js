@@ -7,9 +7,9 @@ const Sync=(()=>{let running=null;let observer=()=>{};const notify=(message,deta
  d=await Storage.get('drafts',d.id);const sent=copy(d.data),generation=d.generation;
  const result=await Transport.call('save',{id:d.id,revision:d.server.revision,data:sent});let fresh=await Storage.get('drafts',d.id);
  if(result.conflict){const merge=Model.merge(d.base,fresh.data,result.record.data);fresh.data=merge.data;fresh.base=copy(result.record.data);fresh.server=result.record;fresh.conflicts=merge.conflicts;fresh.dirty=true;await Storage.put('drafts',fresh);notify(merge.conflicts.length?'Conflits à résoudre':'Modifications indépendantes fusionnées',d.id);if(!merge.conflicts.length)setTimeout(()=>run(),1000);continue;}
- fresh.server=result;fresh.base=copy(result.data);fresh.dirty=fresh.generation!==generation;if(!fresh.dirty)fresh.data=copy(result.data);fresh.lastSync=new Date().toISOString();fresh.error=null;await Storage.put('drafts',fresh);
+ fresh.server=result;fresh.base=copy(result.data);fresh.dirty=fresh.generation!==generation;for(const photoId of Model.photos(fresh.data)){const photo=await Storage.get('photos',photoId);if(photo&&!photo.remote)fresh.dirty=true;}if(!fresh.dirty)fresh.data=copy(result.data);fresh.lastSync=new Date().toISOString();fresh.error=null;await Storage.put('drafts',fresh);
  // Only request remote removal after the server has acknowledged an unreferenced photo.
- if(!fresh.dirty){for(const id of fresh.removedPhotos||[]){await Transport.call('deletePhoto',{id});}fresh.removedPhotos=[];await Storage.put('drafts',fresh);}notify(fresh.dirty?'Modifications en attente':'Synchronisé',d.id);
+ if(!fresh.dirty){for(const id of fresh.removedPhotos||[]){await Transport.call('deletePhoto',{id});}fresh.removedPhotos=[];await Storage.put('drafts',fresh);}notify(fresh.dirty?'Modifications en attente':'Synchronisé',d.id);if(fresh.dirty)setTimeout(()=>run(),1000);
  }catch(e){const f=await Storage.get('drafts',d.id);f.error=e.message;if(f.removedPhotos?.length)f.dirty=true;await Storage.put('drafts',f);notify(e.message,d.id);if(e.message==='SESSION_EXPIRED')break;}}
  }
  return {run,onChange(fn){observer=fn},busy:()=>!!running};})();

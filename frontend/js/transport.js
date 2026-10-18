@@ -1,7 +1,7 @@
 
 /* Beauregard Véhicules — GET/JSON pour les petites requêtes, pont HTML pour les charges importantes. */
 const Transport=(()=>{
-  const MAX_GET_DATA=4500;
+  const MAX_GET_URL=7000;
   let bridge=null,origin=null,channel=null,ready=null,frame=null;
   const pending=new Map();
   function connect(){
@@ -14,7 +14,7 @@ const Transport=(()=>{
       frame.title='Connexion sécurisée au serveur';
       frame.src=c.apiUrl+'?channel='+encodeURIComponent(channel);
       document.body.append(frame);
-      const timer=setTimeout(()=>{ready=null;frame.remove();reject(Error('Le serveur ne répond pas pour les données volumineuses.'))},30000);
+      const timer=setTimeout(()=>{ready=null;frame.remove();reject(Error('Le serveur ne répond pas pour les données volumineuses.'))},60000);
       const handler=e=>{
         if(e.data?.channel!==channel)return;
         if(!/^https:\/\/(?:[a-z0-9-]+-script\.googleusercontent\.com|script\.googleusercontent\.com|script\.google\.com)$/.test(e.origin))return;
@@ -38,7 +38,7 @@ const Transport=(()=>{
     url.searchParams.set('token',Auth.token());
     url.searchParams.set('data',JSON.stringify(payload));
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),60000);
+    const timer=setTimeout(()=>controller.abort(),window.VEHICLES_CONFIG.requestTimeout||330000);
     try{
       const response=await fetch(url.toString(),{method:'GET',cache:'no-store',credentials:'omit',signal:controller.signal});
       if(!response.ok)throw Error('HTTP '+response.status);
@@ -60,8 +60,10 @@ const Transport=(()=>{
   }
   async function call(action,payload={}){
     if(!navigator.onLine)throw Error('Hors ligne : les données restent sur ton appareil');
-    const data=JSON.stringify(payload);
-    return data.length<=MAX_GET_DATA?get(action,payload):large(action,payload);
+    const encoded=encodeURIComponent(JSON.stringify(payload));
+    // Les codes et signatures ne doivent pas apparaître dans une URL.
+    const privatePayload=action==='login'||action==='sign'||action==='photo';
+    return !privatePayload&&encoded.length+window.VEHICLES_CONFIG.apiUrl.length+Auth.token().length+200<=MAX_GET_URL?get(action,payload):large(action,payload);
   }
   return {call};
 })();
@@ -73,6 +75,7 @@ const Auth=(()=>{
   function save(s){session=s;sessionStorage.setItem('bg-session',JSON.stringify(s))}
   async function login(code,admin){const s=await Transport.call('login',{code,admin});save(s);return s}
   async function identity(first,last){const s=await Transport.call('identity',{first,last});save({...session,...s});return s}
-  async function logout(){try{await Transport.call('logout')}finally{session=null;sessionStorage.removeItem('bg-session')}}
-  return {token,current,login,identity,logout};
+  function invalidate(){session=null;sessionStorage.removeItem('bg-session')}
+  async function logout(){try{await Transport.call('logout')}finally{invalidate()}}
+  return {token,current,login,identity,logout,invalidate};
 })();
