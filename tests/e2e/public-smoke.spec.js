@@ -8,13 +8,13 @@ test('@smoke page publique charge sans erreur HTTP', async ({ page }) => {
 });
 
 test('@smoke interface non vide et titre présent', async ({ page }) => {
-  await page.goto('./');
+  await page.goto(   'https://runner-fb.github.io/beauregard-vehicules/' );
   await expect(page.locator('body')).not.toBeEmpty();
   expect((await page.title()).trim().length).toBeGreaterThan(0);
 });
 
 test('@smoke absence de débordement horizontal majeur', async ({ page }) => {
-  await page.goto('./');
+  await page.goto(   'https://runner-fb.github.io/beauregard-vehicules/' );
   await page.waitForLoadState('load');
   const sizes = await page.evaluate(() => ({
     scroll: document.documentElement.scrollWidth,
