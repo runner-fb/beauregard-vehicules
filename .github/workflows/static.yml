@@ -2,6 +2,8 @@
 name: Publier Beauregard Véhicules
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -22,6 +24,15 @@ jobs:
     steps:
       - name: Récupérer les fichiers
         uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tester et préparer le cache
+        run: |
+          node --test tests/*.test.cjs
+          node scripts/build-cache.cjs
 
       - name: Vérifier la configuration
         run: |
