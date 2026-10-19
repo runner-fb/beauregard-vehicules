@@ -1,0 +1,31 @@
+name: Corrections validées — recette isolée
+on:
+  push:
+    branches: ['fix/recette-validee-20261018']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/*.test.cjs
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test tests/e2e/validated-corrections.spec.js tests/e2e/public-smoke.spec.js --workers=3 --timeout=60000
+        env:
+          BASE_URL: http://127.0.0.1:8765/
+          LOCAL_TEST_SERVER: 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: corrections-recette
+          path: |
+            playwright-report/
+            test-results/
