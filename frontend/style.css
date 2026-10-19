@@ -572,3 +572,62 @@ main{margin:18px auto}.card{padding:16px;margin:12px 0}.entry{padding:10px 0}h2{
 .summary-view label input[type=checkbox]{width:22px;height:22px;flex:none}
 .steps .active{scroll-margin-inline:24px}
 @media(max-width:600px){.vehicle-photo{padding:10px}.summary-view>.map{max-width:100%}}
+
+/* Formulaire de création compact, sans modifier les autres écrans. */
+#create .split { row-gap: 4px; column-gap: 12px; }
+#create .split > label { margin: 2px 0 5px; line-height: 1.3; }
+#create .split input, #create .split select { margin-top: 4px; min-height: 46px; padding: 9px 12px; }
+#create .vehicle-photo { margin: 8px 0 12px; padding: 10px 12px; }
+#create .vehicle-photo h3 { margin-bottom: 8px; }
+#create .photo-capture-button { width: 100%; min-height: 48px; cursor: pointer; }
+#create .visually-hidden-file { position: absolute; width: 1px; height: 1px; padding: 0; margin: 0; opacity: 0; overflow: hidden; clip-path: inset(50%); }
+@media (max-width: 600px) {
+  #create .split { gap: 3px; }
+  #create .split > label { margin: 1px 0 4px; }
+  #create .vehicle-photo { margin-top: 7px; }
+}
+
+/* Identité visuelle Runner Beauregard 2027.
+   Adaptation ciblée : on n'importe PAS les sélecteurs structurels Runner
+   pour préserver les cartes, formulaires et plans de l'application Véhicules. */
+:root {
+  --aqua:#a5f5f1; --runner-green:#24f49a; --coral:#fa7885;
+  --yellow:#fff6a3; --ink:#111716;
+  --green:#111716; --line:#c5ded9; --red:#a3233b;
+  color:#111716; background:#effcfa;
+}
+body { background:#effcfa; color:var(--ink); }
+header { background:var(--aqua); border-bottom:3px solid var(--ink); }
+header a { color:var(--ink); }
+header a small { color:#38534d; }
+.brand-mark {
+  background:#24f49a;
+  border:2px solid var(--ink);
+  border-radius:10px 10px 10px 0;
+  color:var(--ink);
+  letter-spacing:0;
+  background-image:url("https://runner-fb.github.io/planning-pwa/assets/beauregard-2027.jpg");
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  font-size:0;
+}
+#connection { background:#d9f6f1; color:var(--ink); }
+.card { border-color:var(--line); box-shadow:4px 4px 0 #d9f6f1; }
+h1,h2,h3 { color:var(--ink); font-weight:900; }
+.eyebrow { color:var(--ink); }
+button,.button { background:var(--ink); color:#fff; border-radius:10px; }
+button.secondary,.button.secondary,.secondary { background:#e4faf3; color:var(--ink); border-color:#86bca7; }
+button.quiet,.button.quiet,.quiet { background:transparent; color:var(--ink); border-color:#789c95; }
+button.danger,.button.danger,.danger { background:#ffe5e9; color:#a3233b; border-color:#fa7885; }
+.hero-action { background:var(--runner-green); color:var(--ink); border:2px solid var(--ink); }
+.hero-action.secondary { background:var(--coral); color:var(--ink); border:2px solid var(--ink); }
+.badge { background:var(--yellow); color:var(--ink); }
+input,select,textarea { border-color:#789c95; color:var(--ink); }
+.steps .active { background:var(--ink); color:white; }
+.steps button { background:#e4faf3; color:var(--ink); }
+footer { color:#4b6360; }
+@media(max-width:600px) {
+  header { background:var(--aqua); }
+  .brand-mark { width:42px; height:42px; }
+}
