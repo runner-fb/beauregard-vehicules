@@ -74,7 +74,7 @@ const Auth=(()=>{
   function current(){return session}
   function save(s){session=s;sessionStorage.setItem('bg-session',JSON.stringify(s))}
   async function login(code,admin){const s=await Transport.call('login',{code,admin});save(s);return s}
-  async function identity(first,last){const s=await Transport.call('identity',{first,last});save({...session,...s});return s}
+  async function identity(first,last){const s=await Transport.call('identity',{first,last});save({...session,...s,first,last});return s}
   function invalidate(){session=null;sessionStorage.removeItem('bg-session')}
   async function logout(){try{await Transport.call('logout')}finally{invalidate()}}
   return {token,current,login,identity,logout,invalidate};
