@@ -1,6 +1,6 @@
 /* Shared deterministic business rules. No browser/Google dependencies. */
 const Model = (() => {
- const views=['avant','arriere','gauche','droite','interieur'];
+ const views=['avant','droite','arriere','gauche','interieur'];
  const types=['Voiture','9 places','Utilitaire'];
  const fuels=['Vide','1/4','1/2','3/4','Plein'];
  const damageTypes=['Rayure','Bosse','Impact','Élément cassé','Autre'];
@@ -21,7 +21,7 @@ const Model = (() => {
  if(!views.includes(d.view)||!Number.isFinite(d.x)||!Number.isFinite(d.y)||d.x<0||d.x>1||d.y<0||d.y>1)err('position invalide');
  if(!Number.isSafeInteger(d.number)||d.number<1||nums.has(d.number))err('numéro invalide ou dupliqué');nums.add(d.number);
  if(!damageTypes.includes(d.type))err('type invalide');if(d.type==='Autre'&&!String(d.comment||d.initial?.comment||'').trim())err('description obligatoire');
- if(d.initial){if(kind!=='return'||!statuses.includes(d.evolution))err('choisis l’évolution');if(d.evolution!=='Inchangé'&&!d.photos?.length)err('nouvelle photo obligatoire');if(d.evolution==='Aggravé'&&!d.comment?.trim())err('commentaire obligatoire');}
+ if(d.initial){if(kind!=='return'||(d.evolution&&!statuses.includes(d.evolution)))err('choisis l’évolution');if(d.evolution==='Aggravé'&&!d.comment?.trim())err('commentaire obligatoire');}
  else {if(!d.photos?.length)err('photo obligatoire');if(kind==='return'&&!['Nouveau dommage','Présence antérieure déclarée'].includes(d.classification))err('classement obligatoire');if(d.classification==='Présence antérieure déclarée'&&!d.comment?.trim())err('précise l’origine et les circonstances de la déclaration');}
  if(d.contest&&(!['Loueur','Locataire','Les deux'].includes(d.contest.party)||!d.contest.reason?.trim()))err('partie et motif de contestation obligatoires');
  }return errors;}
@@ -38,4 +38,4 @@ const Model = (() => {
  function setAt(o,path,v){let t=o;for(const k of path.slice(0,-1)){if(!t[k])t[k]={};t=t[k]}if(v===null)delete t[path.at(-1)];else t[path.at(-1)]=clone(v);}
  return {views,types,fuels,damageTypes,statuses,clone,same,plate,newData,validate,photos,progress,merge,setAt};
 })();
-if(typeof module!=='undefined')module.exports=Model;
+

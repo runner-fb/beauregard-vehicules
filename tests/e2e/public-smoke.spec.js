@@ -1,7 +1,7 @@
 
 const { test, expect } = require('@playwright/test');
 
-const SITE = 'https://runner-fb.github.io/beauregard-vehicules/';
+const SITE = process.env.BASE_URL || 'https://runner-fb.github.io/beauregard-vehicules/';
 
 test('@smoke page publique charge sans erreur HTTP', async ({ page }) => {
   const response = await page.goto(SITE, {

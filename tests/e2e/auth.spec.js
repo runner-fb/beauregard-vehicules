@@ -1,14 +1,10 @@
 const { test, expect } = require('@playwright/test');
-const SITE = 'https://runner-fb.github.io/beauregard-vehicules/';
+const SITE = process.env.BASE_URL || 'https://runner-fb.github.io/beauregard-vehicules/';
 
 async function openLogin(page, admin = false) {
   await page.goto(SITE);
   await expect(page.locator('#app')).toBeVisible();
-  if (admin) {
-    await page.locator('[data-action="admin"]').click();
-  } else {
-    await page.locator('#account').click();
-  }
+  if (!(await page.locator('form#login').isVisible())) await page.locator('#account').click();
   await expect(page.locator('form#login input[name="code"]')).toBeVisible();
 }
 
@@ -32,7 +28,7 @@ test.describe('Authentification contrôleur', () => {
     await openLogin(page);
     await page.locator('form#login input[name="code"]').fill('CODE-INVALIDE-PLAYWRIGHT');
     await page.locator('form#login button').first().click();
-    await expect(page.locator('form#identity')).toHaveCount(0);
+    await expect(page.locator('#toast')).toContainText('Code incorrect',{timeout:90000});await expect(page.locator('form#identity')).toHaveCount(0);
     await expect(page.locator('#account')).toHaveText('Connexion');
   });
   test('connexion puis déconnexion', async ({page}) => {
@@ -48,6 +44,6 @@ test.describe('Authentification administrateur', () => {
   test('connexion et accès aux éditions', async ({page}) => {
     test.skip(!process.env.TEST_ADMIN_CODE, 'Secret TEST_ADMIN_CODE absent');
     await authenticate(page,process.env.TEST_ADMIN_CODE,true);
-    await expect(page.getByRole('heading',{name:'Les éditions'})).toBeVisible({timeout:90000});
+    await page.getByRole('button',{name:'Dossiers',exact:true}).click();await expect(page.getByRole('heading',{name:'Les véhicules'})).toBeVisible({timeout:90000});
   });
 });
