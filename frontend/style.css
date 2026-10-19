@@ -560,3 +560,6 @@ pre {
     height: 85px;
   }
 }
+/* Recette mobile : densité, états et cibles tactiles. */
+main{margin:18px auto}.card{padding:16px;margin:12px 0}.entry{padding:10px 0}h2{margin-bottom:10px}h3{margin-bottom:5px}p{margin:8px 0}label{margin:8px 0}.split,.grid{gap:10px}textarea{min-height:72px}.steps{margin:12px 0}.hero-action{min-height:100px;padding:18px;font-size:23px}.top-gap{margin-top:12px}dialog{padding:16px}dialog h2{font-size:21px}dialog label{font-size:14px}.required,.new-damage h3{color:var(--red)}.old-damage{background:#f0f1f0;color:#555;border-radius:8px;padding:10px}.old-damage h3{color:#242424}.marker.initial,.marker.initial.disputed{color:#111}.dossier-icons{margin-top:8px}.icon-action{min-width:44px;min-height:44px;padding:7px}.icon-action:disabled{cursor:not-allowed}.summary-view{margin:12px 0;padding:10px 0;border-top:1px solid var(--line)}.summary-view>.map{max-width:520px}.signature .split{grid-template-columns:1fr 1fr}button[aria-busy=true]{cursor:progress}.warning,.readonly{padding:10px}
+@media(max-width:600px){main{padding:0 12px;margin:14px auto}.card{padding:12px}.hero-action{min-height:84px;font-size:21px;padding:14px}.dossier-icons>button{flex:0 0 44px}.steps{max-width:100%}dialog{padding:14px;width:94vw}h1{font-size:30px}.signature .split{gap:8px}.photo-grid{margin:6px 0}}
