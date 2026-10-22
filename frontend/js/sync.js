@@ -10,6 +10,6 @@ const Sync=(()=>{let running=null;let observer=()=>{};const notify=(message,deta
  fresh.server=result;fresh.base=copy(result.data);fresh.dirty=fresh.generation!==generation;for(const photoId of Model.photos(fresh.data)){const photo=await Storage.get('photos',photoId);if(photo&&!photo.remote)fresh.dirty=true;}if(!fresh.dirty)fresh.data=copy(result.data);fresh.lastSync=new Date().toISOString();fresh.error=null;await Storage.put('drafts',fresh);
  // Only request remote removal after the server has acknowledged an unreferenced photo.
  if(!fresh.dirty){for(const id of fresh.removedPhotos||[]){await Transport.call('deletePhoto',{id});}fresh.removedPhotos=[];await Storage.put('drafts',fresh);}notify(fresh.dirty?'Modifications en attente':'Synchronisé',d.id);if(fresh.dirty)setTimeout(()=>run(),1000);
- }catch(e){const f=await Storage.get('drafts',d.id);f.error=e.message;if(f.removedPhotos?.length)f.dirty=true;await Storage.put('drafts',f);notify(e.message,d.id);if(e.message==='SESSION_EXPIRED')break;}}
+ }catch(e){const f=await Storage.get('drafts',d.id);if(!f)continue;if(e.message==='DOSSIER_SUPPRIME'){f.deleted=true;f.suspended=true;f.dirty=false;f.error='Dossier supprimé sur le serveur';await Storage.put('drafts',f);notify(f.error,f.id);continue;}f.error=e.message;if(f.removedPhotos?.length)f.dirty=true;await Storage.put('drafts',f);notify(e.message,d.id);if(e.message==='SESSION_EXPIRED')break;}}
  }
  return {run,onChange(fn){observer=fn},busy:()=>!!running};})();
