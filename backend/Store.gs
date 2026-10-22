@@ -11,7 +11,7 @@ function audit_(s,action,record,details){put_('Audit',{id:id_(),at:time_(),actor
 function lock_(fn){const l=LockService.getScriptLock();l.waitLock(30000);try{return fn()}finally{l.releaseLock()}}
 function active_(){return props_().getProperty('ACTIVE_EDITION')||'2027'}
 function editionAccess_(s,edition,write){if(edition!==active_()&&(s.role!=='admin'||write))throw Error('Édition en lecture seule ou accès interdit')}
-function record_(s,id,write){const r=get_('Records',id);if(!r||r.deleted)throw Error('Dossier introuvable');editionAccess_(s,r.edition,write);return r}
+function record_(s,id,write){const r=get_('Records',id);if(r?.deleted||get_('Operations','deleted:'+id))throw Error('DOSSIER_SUPPRIME');if(!r)throw Error('Dossier introuvable');editionAccess_(s,r.edition,write);return r}
 function digest_(v){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,v,Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('')}
 function folder_(parent,name){const f=parent.getFoldersByName(name);return f.hasNext()?f.next():parent.createFolder(name)}
 function vehicleFolder_(r){const peers=rows_('Records').filter(x=>x.edition===r.edition&&x.data.vehicle.plate===r.data.vehicle.plate);const saved=peers.find(x=>x.folderId);if(saved)return DriveApp.getFolderById(saved.folderId);const root=DriveApp.getFolderById(props_().getProperty('DATA_FOLDER_ID'));const ed=folder_(root,r.edition);const folder=folder_(ed,r.data.vehicle.plate+' — '+r.data.vehicle.brand+' '+r.data.vehicle.model);const fresh=get_('Records',r.id);fresh.folderId=folder.getId();put_('Records',fresh);return folder;}

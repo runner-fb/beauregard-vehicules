@@ -29,7 +29,7 @@ function jsonResponse_(value) {return ContentService.createTextOutput(JSON.strin
 function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000)throw Error('Requête invalide');if(p.action==='login')return {ok:true,data:login_(p)};const s=session_(p.token,p.action!=='identity');let data;
  if(p.action==='read')data=record_(s,p.id,false);
  else if(p.action==='adminList'){admin_(s);const ed=p.edition||active_();editionAccess_(s,ed,false);data=rows_('Records').filter(r=>r.edition===ed&&!r.deleted).map(r=>({...r,data:{vehicle:r.data.vehicle}}));}
- else if(p.action==='list'){const ed=p.edition||active_();editionAccess_(s,ed,false);data=rows_('Records').filter(r=>r.edition===ed&&!r.deleted).map(r=>({...r,data:{vehicle:r.data.vehicle},progress:Model.progress(r.data,r.kind)}));}
+ else if(p.action==='list'){const ed=p.edition||active_();editionAccess_(s,ed,false);data=rows_('Records').filter(r=>r.edition===ed&&!r.deleted&&(r.kind==='return'||r.kind==='pickup'&&r.state==='final')).map(r=>({id:r.id,edition:r.edition,kind:r.kind,state:r.state,initialId:r.initialId,updatedBy:r.updatedBy,updatedAt:r.updatedAt,data:{vehicle:r.data.vehicle},progress:Model.progress(r.data,r.kind)}));}
  else if(p.action==='file')data=readFile_(s,p);
  else if(p.action==='editions'){admin_(s);data=rows_('Editions');}
  else if(p.action==='history'){const r=record_(s,p.id,false);data=rows_('Audit').filter(a=>a.record===r.id);}
