@@ -20,7 +20,7 @@ function amendment_(s,p){admin_(s);const r=record_(s,p.record,false);if(r.state!
  const a={id:p.id,record:r.id,number:rows_('Amendments').filter(x=>x.record===r.id).length+1,at:time_(),by:s.name,reason:String(p.reason).slice(0,5000),changes:p.changes,photos:evidence,pdf:null};put_('Amendments',a);audit_(s,'Avenant administrateur',r.id,{amendment:a.id,reason:a.reason});return a;}
 
 function deleteDraft_(s,p){assertId_(p.id);const r=get_('Records',p.id);
- if(r){editionAccess_(s,r.edition,true);if(r.deleted)return {id:r.id,deleted:true};if(r.state!=='draft'||Object.keys(r.signatures||{}).length)throw Error('Seul un contrôle en cours non signé peut être supprimé');if(p.revision!==undefined&&r.revision!==p.revision)throw Error('Le dossier a changé. Ouvre-le avant de réessayer.');r.deleted=true;r.updatedAt=time_();r.revision++;put_('Records',r);}
+ if(r){editionAccess_(s,r.edition,true);if(r.deleted)return {id:r.id,deleted:true};if(r.state!=='draft'||Object.keys(r.signatures||{}).length)throw Error('Seul un contrôle en cours non signé peut être supprimé');if(!Number.isSafeInteger(p.revision)||r.revision!==p.revision)throw Error('Le dossier a changé. Ouvre-le avant de réessayer.');r.deleted=true;r.updatedAt=time_();r.revision++;put_('Records',r);}
  else{if(p.edition!==active_())throw Error('Édition locale différente de l’édition active');editionAccess_(s,p.edition,true);}
  // Le marqueur persistant bloque aussi une création dont la réponse a été perdue.
  if(!get_('Operations','deleted:'+p.id)){put_('Operations',{id:'deleted:'+p.id,record:p.id,edition:r?r.edition:p.edition,at:time_(),by:s.name});audit_(s,'Suppression du brouillon',p.id,{});}return {id:p.id,deleted:true};}

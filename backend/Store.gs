@@ -10,7 +10,8 @@ function time_(){return new Date().toISOString()}
 function audit_(s,action,record,details){put_('Audit',{id:id_(),at:time_(),actor:s.name,role:s.role,action,record,details:details||null})}
 function lock_(fn){const l=LockService.getScriptLock();l.waitLock(30000);try{return fn()}finally{l.releaseLock()}}
 function active_(){return props_().getProperty('ACTIVE_EDITION')||'2027'}
-function editionAccess_(s,edition,write){if(edition!==active_()&&(s.role!=='admin'||write))throw Error('Édition en lecture seule ou accès interdit')}
+// Shared edition workspace: authenticated colleagues may resume each other's records.
+function editionAccess_(s,edition,write){if(!s||!['admin','controller'].includes(s.role)||!s.name)throw Error('Accès non autorisé');if(edition!==active_()&&(s.role!=='admin'||write))throw Error('Édition en lecture seule ou accès interdit')}
 function record_(s,id,write){const r=get_('Records',id);if(r?.deleted||get_('Operations','deleted:'+id))throw Error('DOSSIER_SUPPRIME');if(!r)throw Error('Dossier introuvable');editionAccess_(s,r.edition,write);return r}
 function digest_(v){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,v,Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('')}
 function folder_(parent,name){const f=parent.getFoldersByName(name);return f.hasNext()?f.next():parent.createFolder(name)}
