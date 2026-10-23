@@ -28,6 +28,7 @@ function doGet(e) {
 function jsonResponse_(value) {return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);}
 function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000)throw Error('Requête invalide');if(p.action==='login')return {ok:true,data:login_(p)};const s=session_(p.token,p.action!=='identity');let data;
  if(p.action==='read')data=presentRecord_(record_(s,p.id,false));
+ else if(p.action==='returnSource'){const plate=Model.plate(p.plate);editionAccess_(s,active_(),false);data=rows_('Records').find(r=>!r.deleted&&!r.archived&&r.edition===active_()&&r.kind==='pickup'&&r.state==='final'&&r.data.vehicle.plate===plate)||null;if(data){data={id:data.id,data:{vehicle:data.data.vehicle}};}}
  else if(p.action==='availability')data=assertVehicleAvailable_(s,p);
  else if(p.action==='adminList'){admin_(s);const ed=p.edition||active_();editionAccess_(s,ed,false);data=rows_('Records').filter(r=>r.edition===ed&&!r.deleted&&!!r.archived===!!p.archived).map(r=>({...presentRecord_(r),data:{vehicle:r.data.vehicle}}));}
  else if(p.action==='list'){admin_(s);const ed=p.edition||active_();editionAccess_(s,ed,false);data=rows_('Records').filter(r=>r.edition===ed&&!r.deleted&&!!r.archived===!!p.archived).map(r=>({id:r.id,edition:r.edition,kind:r.kind,state:r.state,initialId:r.initialId,updatedBy:r.updatedBy,updatedAt:r.updatedAt,data:{vehicle:r.data.vehicle},progress:Model.progress(r.data,r.kind,r)}));}
