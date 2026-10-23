@@ -26,8 +26,9 @@ function doGet(e) {
   return t.evaluate().setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 function jsonResponse_(value) {return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);}
-function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000)throw Error('Requête invalide');if(p.action==='login')return {ok:true,data:login_(p)};const s=session_(p.token,p.action!=='identity');let data;
- if(p.action==='read')data=presentRecord_(record_(s,p.id,false));
+function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000)throw Error('Requête invalide');if(p.action==='login')return {ok:true,data:login_(p)};const s=session_(p.token,!['identity','serviceConfig'].includes(p.action));let data;
+ if(p.action==='serviceConfig')data=serviceConfig_();
+ else if(p.action==='read')data=presentRecord_(record_(s,p.id,false));
  else if(p.action==='returnSource'){const plate=Model.plate(p.plate);editionAccess_(s,active_(),false);data=rows_('Records').find(r=>!r.deleted&&!r.archived&&r.edition===active_()&&r.kind==='pickup'&&r.state==='final'&&r.data.vehicle.plate===plate)||null;if(data){data={id:data.id,data:{vehicle:data.data.vehicle}};}}
  else if(p.action==='availability')data=assertVehicleAvailable_(s,p);
  else if(p.action==='adminList'){admin_(s);const ed=p.edition||active_();editionAccess_(s,ed,false);data=rows_('Records').filter(r=>r.edition===ed&&!r.deleted&&!!r.archived===!!p.archived).map(r=>({...presentRecord_(r),data:{vehicle:r.data.vehicle}}));}
@@ -37,11 +38,13 @@ function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000
  else if(p.action==='editions'){admin_(s);data=rows_('Editions');}
  else if(p.action==='history'){const r=record_(s,p.id,false);data=rows_('Audit').filter(a=>a.record===r.id);}
  else if(p.action==='amendments'){const r=record_(s,p.id,false);data=rows_('Amendments').filter(a=>a.record===r.id);}
- else if(p.action==='pdf')data=pdfFor_(s,p.id,false);
- else if(p.action==='amendmentPdf')data=pdfFor_(s,p.id,true);
+ else if(p.action==='pdf')data=lock_(()=>{requireProduction_(p);return pdfFor_(s,p.id,false)});
+ else if(p.action==='amendmentPdf')data=lock_(()=>{requireProduction_(p);return pdfFor_(s,p.id,true)});
  else data=lock_(()=>{
  if(p.action==='identity')return identity_(s,p);
  if(p.action==='logout'){s.expires=0;return put_('Sessions',s)&&true}
+ if(p.action==='setServiceMode')return setServiceMode_(s,p);
+ requireProduction_(p);
  if(p.action==='activity')return activity_(s,p);
  if(p.action==='takeover')return takeover_(s,p);
  if(p.action==='archiveControl')return archiveControl_(s,p);

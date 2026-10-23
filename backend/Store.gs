@@ -21,6 +21,11 @@ function assertId_(id){if(typeof id!=='string'||!/^[a-zA-Z0-9_-]{8,80}$/.test(id
 
 // A session renewal keeps the identity; a takeover changes the opaque write lease.
 function actorKey_(s){return String(s.actorId||s.name||'').trim().normalize('NFKC').toLocaleLowerCase('fr')+'|'+s.role}
-function writeRecord_(s,p){const r=record_(s,p.id||p.record,true);if(!r.lease||p.lease!==r.lease||r.owner!==actorKey_(s))throw Error('AUTORISATION_REMPLACEE : un référent doit te redonner la main.');return r}
+function writeRecord_(s,p){const r=record_(s,p.id||p.record,true);if(r.modeEpoch!==serviceConfig_().epoch)throw Error('AUTORISATION_REMPLACEE : changement de saison, reprise référent nécessaire.');if(!r.lease||p.lease!==r.lease||r.owner!==actorKey_(s))throw Error('AUTORISATION_REMPLACEE : un référent doit te redonner la main.');return r}
 function businessStatus_(r,now){if(r.state==='final')return r.kind==='return'?'Rendu':'Réceptionné';if(Object.values(r.signatures||{}).some(x=>x.image))return 'En cours';const last=Date.parse(r.lastActivityAt||r.updatedAt||r.createdAt);return !Number.isFinite(last)||(now===undefined?Date.now():now)-last>=600000?'Bloqué':'En cours'}
 function presentRecord_(r){return {...r,businessStatus:businessStatus_(r)}}
+
+// Fail closed until a referent explicitly starts the season. Never deletes records.
+function serviceConfig_(){const x=get_('Operations','settings:service');return x?{production:x.production===true,epoch:x.epoch,changedAt:x.at}:{production:false,epoch:'unconfigured',changedAt:null}}
+function requireProduction_(p){const mode=serviceConfig_();if(!mode.production||p.production!==true||p.modeEpoch!==mode.epoch)throw Error('MODE_CHANGE : vérifie la mise en service avant de continuer.');return mode}
+function setServiceMode_(s,p){admin_(s);if(typeof p.production!=='boolean'||p.confirm!==true)throw Error('Confirmation du changement de mode requise');const previous=serviceConfig_();if(p.modeEpoch!==previous.epoch)throw Error('MODE_CHANGE : le réglage a changé sur un autre appareil.');if(previous.production===p.production)return previous;const x={id:'settings:service',production:p.production,epoch:id_(),at:time_(),by:s.name};put_('Operations',x);audit_(s,p.production?'Mise en service':'Désactivation de la saison',null,{previous:previous.production,production:p.production});return serviceConfig_()}
