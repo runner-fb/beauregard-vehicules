@@ -643,3 +643,6 @@ footer { color:#4b6360; }
 @media(max-width:400px){header{gap:6px}header a{font-size:11px;gap:5px}.brand-mark{width:30px;height:34px;font-size:24px}#dossiers{font-size:12px}.compact-form .split{gap:6px}}
 
 .vehicle-actions{display:flex;flex-wrap:nowrap;gap:4px;width:100%;margin-top:8px}.vehicle-actions .icon-action{flex:0 1 44px;min-width:40px;width:44px;height:44px;min-height:44px;padding:4px;font-size:20px}.vehicle-actions button[aria-busy=true]{font-size:0}.vehicle-actions button[aria-busy=true]::after{content:'…';font-size:20px}
+
+#service-mode{padding:10px;text-align:center;font-weight:900;background:var(--yellow)}
+.map.readonly-map{touch-action:pan-y pinch-zoom}.readonly-map .marker{touch-action:pan-y}.photo-grid,.photo-tile,.photo-tile img{touch-action:pan-y pinch-zoom}
