@@ -75,7 +75,7 @@ const Auth=(()=>{
   function current(){if(session&&(!['admin','controller'].includes(session.role)||!Number.isFinite(session.expires)||session.expires<=Date.now()))invalidate();return session}
   function save(s){session=s;sessionStorage.setItem('bg-session',JSON.stringify(s))}
   async function login(code,admin){const s=await Transport.call('login',{code,admin});save(s);return s}
-  async function identity(first,last){const s=await Transport.call('identity',{first,last});save({...session,...s,first,last});return s}
+  async function identity(first,last,personId=null,handoff=null){const s=await Transport.call('identity',{first,last,personId,handoff});save({...session,...s});return s}
   function invalidate(){session=null;sessionStorage.removeItem('bg-session');window.dispatchEvent(new Event('bg-session-ended'))}
   async function logout(){try{await Transport.call('logout')}finally{invalidate()}}
   function actor(){const s=current();return s?String(s.actorId||s.name||'').trim().normalize('NFKC').toLocaleLowerCase('fr')+'|'+s.role:'';}
