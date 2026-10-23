@@ -631,3 +631,13 @@ footer { color:#4b6360; }
   header { background:var(--aqua); }
   .brand-mark { width:42px; height:42px; }
 }
+
+/* Corrections ciblées : formulaires et actions tactiles, charte conservée. */
+[hidden]{display:none!important}
+.compact-form .split{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.compact-form input,.compact-form select{min-width:0;padding:9px}
+.damage-dialog{max-height:90dvh;overflow-y:auto}
+.damage-dialog .actions{position:sticky;bottom:-14px;background:white;padding:10px 0;z-index:2;border-top:1px solid var(--line)}
+.damage-dialog .actions button{min-width:110px}
+#dossiers{padding:8px;min-height:44px}
+@media(max-width:400px){header{gap:6px}header a{font-size:11px;gap:5px}.brand-mark{width:30px;height:34px;font-size:24px}#dossiers{font-size:12px}.compact-form .split{gap:6px}}
