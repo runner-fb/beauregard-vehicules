@@ -28,6 +28,7 @@ function doGet(e) {
 function jsonResponse_(value) {return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);}
 function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000)throw Error('Requête invalide');if(p.action==='login')return {ok:true,data:login_(p)};const s=session_(p.token,!['identity','serviceConfig'].includes(p.action));let data;
  if(p.action==='serviceConfig')data=serviceConfig_();
+ else if(p.action==='signers')data=signers_();
  else if(p.action==='read')data=presentRecord_(record_(s,p.id,false));
  else if(p.action==='returnSource'){const plate=Model.plate(p.plate);editionAccess_(s,active_(),false);data=rows_('Records').find(r=>!r.deleted&&!r.archived&&r.edition===active_()&&r.kind==='pickup'&&r.state==='final'&&r.data.vehicle.plate===plate)||null;if(data){data={id:data.id,data:{vehicle:data.data.vehicle}};}}
  else if(p.action==='availability')data=assertVehicleAvailable_(s,p);
@@ -45,6 +46,8 @@ function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000
  if(p.action==='logout'){s.expires=0;return put_('Sessions',s)&&true}
  if(p.action==='setServiceMode')return setServiceMode_(s,p);
  requireProduction_(p);
+ if(p.action==='addSigner')return addSigner_(s,p);
+ if(p.action==='reopenSignatures')return reopenSignatures_(s,p);
  if(p.action==='activity')return activity_(s,p);
  if(p.action==='takeover')return takeover_(s,p);
  if(p.action==='archiveControl')return archiveControl_(s,p);
