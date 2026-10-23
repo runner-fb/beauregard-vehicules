@@ -77,6 +77,7 @@ const Auth=(()=>{
   async function identity(first,last){const s=await Transport.call('identity',{first,last});save({...session,...s,first,last});return s}
   function invalidate(){session=null;sessionStorage.removeItem('bg-session');window.dispatchEvent(new Event('bg-session-ended'))}
   async function logout(){try{await Transport.call('logout')}finally{invalidate()}}
-  function allows(d){const s=current();return !!(s?.name&&d&&(d.edition===s.edition||s.role==='admin'));}
-  return {token,current,login,identity,logout,invalidate,allows};
+  function actor(){const s=current();return s?String(s.actorId||s.name||'').trim().normalize('NFKC').toLocaleLowerCase('fr')+'|'+s.role:'';}
+  function allows(d){const s=current();return !!(s?.name&&d&&(s.role==='admin'||d.edition===s.edition&&d.server?.owner===actor()));}
+  return {token,current,login,identity,logout,invalidate,allows,actor};
 })();
