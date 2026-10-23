@@ -58,14 +58,15 @@ const Transport=(()=>{
       bridge.postMessage({channel,type:'rpc',id,payload:{...payload,action,token:Auth.token()}},origin);
     });
   }
-  async function call(action,payload={}){
+  async function rawCall(action,payload={}){
     if(!navigator.onLine)throw Error('Hors ligne : les données restent sur ton appareil');
     const encoded=encodeURIComponent(JSON.stringify(payload));
     // Les codes et signatures ne doivent pas apparaître dans une URL.
     const privatePayload=action==='login'||action==='sign'||action==='photo';
     return !privatePayload&&encoded.length+window.VEHICLES_CONFIG.apiUrl.length+Auth.token().length+200<=MAX_GET_URL?get(action,payload):large(action,payload);
   }
-  return {call};
+  async function call(action,payload={}){if(['login','identity','logout','serviceConfig','setServiceMode','identities'].includes(action))return rawCall(action,payload);if(typeof Service==='undefined'||!Service.current())throw Error('Mode de fonctionnement non vérifié');if(Service.sandbox())return Sandbox.call(action,payload);const mode=await Service.verify();if(!mode.production)throw Error('MODE_CHANGE : la saison a été désactivée');return rawCall(action,{...payload,production:true,modeEpoch:mode.epoch});}
+  return {call,rawCall};
 })();
 const Auth=(()=>{
   let session=null;
