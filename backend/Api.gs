@@ -31,6 +31,9 @@ function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000
  else if(p.action==='identities')data=identities_(s,p);
  else if(p.action==='signers')data=signers_();
  else if(p.action==='read')data=presentRecord_(record_(s,p.id,false));
+ else if(p.action==='returnCandidates')data=returnCandidates_(s);
+ else if(p.action==='returnPreview')data=returnPreview_(s,p);
+ else if(p.action==='returnInitial')data=returnInitial_(s,p);
  else if(p.action==='returnSource'){const plate=Model.plate(p.plate);editionAccess_(s,active_(),false);data=rows_('Records').find(r=>!r.deleted&&!r.archived&&r.edition===active_()&&r.kind==='pickup'&&r.state==='final'&&r.data.vehicle.plate===plate)||null;if(data){data={id:data.id,data:{vehicle:data.data.vehicle}};}}
  else if(p.action==='availability')data=assertVehicleAvailable_(s,p);
  else if(p.action==='adminList'){admin_(s);const ed=p.edition||active_();editionAccess_(s,ed,false);data=rows_('Records').filter(r=>r.edition===ed&&!r.deleted&&!!r.archived===!!p.archived).map(r=>({...presentRecord_(r),data:{vehicle:r.data.vehicle}}));}
