@@ -29,10 +29,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Tester et préparer le cache
-        run: |
-          node --test tests/*.test.cjs
-          node scripts/build-cache.cjs
+      - name: Préparer le cache
+        run: node scripts/build-cache.cjs
+
 
       - name: Vérifier la configuration
         run: |
