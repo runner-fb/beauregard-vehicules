@@ -641,3 +641,9 @@ footer { color:#4b6360; }
 .damage-dialog .actions button{min-width:110px}
 #dossiers{padding:8px;min-height:44px}
 @media(max-width:400px){header{gap:6px}header a{font-size:11px;gap:5px}.brand-mark{width:30px;height:34px;font-size:24px}#dossiers{font-size:12px}.compact-form .split{gap:6px}}
+
+.vehicle-actions{display:flex;flex-wrap:nowrap;gap:4px;width:100%;margin-top:8px}.vehicle-actions .icon-action{flex:0 1 44px;min-width:40px;width:44px;height:44px;min-height:44px;padding:4px;font-size:20px}.vehicle-actions button[aria-busy=true]{font-size:0}.vehicle-actions button[aria-busy=true]::after{content:'…';font-size:20px}
+
+#service-mode{padding:10px;text-align:center;font-weight:900;background:var(--yellow)}
+.map.readonly-map{touch-action:pan-y pinch-zoom}.readonly-map .marker{touch-action:pan-y}.photo-grid,.photo-tile,.photo-tile img{touch-action:pan-y pinch-zoom}
+.recap-signatures canvas{display:block;width:100%;max-width:640px;height:auto;aspect-ratio:5/2;border:2px solid #64776b;border-radius:8px;background:#fff;touch-action:none}.saved-signature{display:block;max-width:240px;width:100%;height:auto}.recap-signatures{margin-top:1.5rem;border-top:1px solid #bdc9bf;padding-top:1rem}

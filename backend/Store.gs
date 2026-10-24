@@ -10,11 +10,22 @@ function time_(){return new Date().toISOString()}
 function audit_(s,action,record,details){put_('Audit',{id:id_(),at:time_(),actor:s.name,role:s.role,action,record,details:details||null})}
 function lock_(fn){const l=LockService.getScriptLock();l.waitLock(30000);try{return fn()}finally{l.releaseLock()}}
 function active_(){return props_().getProperty('ACTIVE_EDITION')||'2027'}
-// Shared edition workspace: authenticated colleagues may resume each other's records.
+// Record ownership and fencing are independent of edition access.
 function editionAccess_(s,edition,write){if(!s||!['admin','controller'].includes(s.role)||!s.name)throw Error('Accès non autorisé');if(edition!==active_()&&(s.role!=='admin'||write))throw Error('Édition en lecture seule ou accès interdit')}
-function record_(s,id,write){const r=get_('Records',id);if(r?.deleted||get_('Operations','deleted:'+id))throw Error('DOSSIER_SUPPRIME');if(!r)throw Error('Dossier introuvable');editionAccess_(s,r.edition,write);return r}
+function record_(s,id,write){const r=get_('Records',id);if(r?.deleted||get_('Operations','deleted:'+id))throw Error('DOSSIER_SUPPRIME');if(!r)throw Error('Dossier introuvable');editionAccess_(s,r.edition,write);if(r.archived){if(write)throw Error('DOSSIER_ARCHIVE');admin_(s);}if(s.role!=='admin'&&r.owner!==actorKey_(s))throw Error('ACCES_DOSSIER_REFUSE');return r}
 function digest_(v){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,v,Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('')}
 function folder_(parent,name){const f=parent.getFoldersByName(name);return f.hasNext()?f.next():parent.createFolder(name)}
 function vehicleFolder_(r){const peers=rows_('Records').filter(x=>x.edition===r.edition&&x.data.vehicle.plate===r.data.vehicle.plate);const saved=peers.find(x=>x.folderId);if(saved)return DriveApp.getFolderById(saved.folderId);const root=DriveApp.getFolderById(props_().getProperty('DATA_FOLDER_ID'));const ed=folder_(root,r.edition);const folder=folder_(ed,r.data.vehicle.plate+' — '+r.data.vehicle.brand+' '+r.data.vehicle.model);const fresh=get_('Records',r.id);fresh.folderId=folder.getId();put_('Records',fresh);return folder;}
 function admin_(s){if(s.role!=='admin')throw Error('Accès administrateur requis')}
 function assertId_(id){if(typeof id!=='string'||!/^[a-zA-Z0-9_-]{8,80}$/.test(id))throw Error('Identifiant invalide');return id}
+
+// A session renewal keeps the identity; a takeover changes the opaque write lease.
+function actorKey_(s){return String(s.actorId||s.name||'').trim().normalize('NFKC').toLocaleLowerCase('fr')+'|'+s.role}
+function writeRecord_(s,p){const r=record_(s,p.id||p.record,true);if(r.modeEpoch!==serviceConfig_().epoch)throw Error('AUTORISATION_REMPLACEE : changement de saison, reprise référent nécessaire.');if(!r.lease||p.lease!==r.lease||r.owner!==actorKey_(s))throw Error('AUTORISATION_REMPLACEE : un référent doit te redonner la main.');return r}
+function businessStatus_(r,now){if(r.state==='final')return r.kind==='return'?'Rendu':'Réceptionné';if(Object.values(r.signatures||{}).some(x=>x.image))return 'En cours';const last=Date.parse(r.lastActivityAt||r.updatedAt||r.createdAt);return !Number.isFinite(last)||(now===undefined?Date.now():now)-last>=600000?'Bloqué':'En cours'}
+function presentRecord_(r){return {...r,businessStatus:businessStatus_(r)}}
+
+// Fail closed until a referent explicitly starts the season. Never deletes records.
+function serviceConfig_(){const x=get_('Operations','settings:service');return x?{production:x.production===true,epoch:x.epoch,changedAt:x.at}:{production:false,epoch:'unconfigured',changedAt:null}}
+function requireProduction_(p){const mode=serviceConfig_();if(!mode.production||p.production!==true||p.modeEpoch!==mode.epoch)throw Error('MODE_CHANGE : vérifie la mise en service avant de continuer.');return mode}
+function setServiceMode_(s,p){admin_(s);if(typeof p.production!=='boolean'||p.confirm!==true)throw Error('Confirmation du changement de mode requise');const previous=serviceConfig_();if(p.modeEpoch!==previous.epoch)throw Error('MODE_CHANGE : le réglage a changé sur un autre appareil.');if(previous.production===p.production)return previous;const x={id:'settings:service',production:p.production,epoch:id_(),at:time_(),by:s.name};put_('Operations',x);audit_(s,p.production?'Mise en service':'Désactivation de la saison',null,{previous:previous.production,production:p.production});return serviceConfig_()}

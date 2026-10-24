@@ -58,14 +58,15 @@ const Transport=(()=>{
       bridge.postMessage({channel,type:'rpc',id,payload:{...payload,action,token:Auth.token()}},origin);
     });
   }
-  async function call(action,payload={}){
+  async function rawCall(action,payload={}){
     if(!navigator.onLine)throw Error('Hors ligne : les données restent sur ton appareil');
     const encoded=encodeURIComponent(JSON.stringify(payload));
     // Les codes et signatures ne doivent pas apparaître dans une URL.
     const privatePayload=action==='login'||action==='sign'||action==='photo';
     return !privatePayload&&encoded.length+window.VEHICLES_CONFIG.apiUrl.length+Auth.token().length+200<=MAX_GET_URL?get(action,payload):large(action,payload);
   }
-  return {call};
+  async function call(action,payload={}){if(['login','identity','logout','serviceConfig','setServiceMode','identities'].includes(action))return rawCall(action,payload);if(typeof Service==='undefined'||!Service.current())throw Error('Mode de fonctionnement non vérifié');if(Service.sandbox())return Sandbox.call(action,payload);const mode=await Service.verify();if(!mode.production)throw Error('MODE_CHANGE : la saison a été désactivée');return rawCall(action,{...payload,production:true,modeEpoch:mode.epoch});}
+  return {call,rawCall};
 })();
 const Auth=(()=>{
   let session=null;
@@ -74,9 +75,10 @@ const Auth=(()=>{
   function current(){if(session&&(!['admin','controller'].includes(session.role)||!Number.isFinite(session.expires)||session.expires<=Date.now()))invalidate();return session}
   function save(s){session=s;sessionStorage.setItem('bg-session',JSON.stringify(s))}
   async function login(code,admin){const s=await Transport.call('login',{code,admin});save(s);return s}
-  async function identity(first,last){const s=await Transport.call('identity',{first,last});save({...session,...s,first,last});return s}
+  async function identity(first,last,personId=null,handoff=null){const s=await Transport.call('identity',{first,last,personId,handoff});save({...session,...s});return s}
   function invalidate(){session=null;sessionStorage.removeItem('bg-session');window.dispatchEvent(new Event('bg-session-ended'))}
   async function logout(){try{await Transport.call('logout')}finally{invalidate()}}
-  function allows(d){const s=current();return !!(s?.name&&d&&(d.edition===s.edition||s.role==='admin'));}
-  return {token,current,login,identity,logout,invalidate,allows};
+  function actor(){const s=current();return s?String(s.actorId||s.name||'').trim().normalize('NFKC').toLocaleLowerCase('fr')+'|'+s.role:'';}
+  function allows(d){const s=current();return !!(s?.name&&d&&(s.role==='admin'||d.edition===s.edition&&d.server?.owner===actor()));}
+  return {token,current,login,identity,logout,invalidate,allows,actor};
 })();
