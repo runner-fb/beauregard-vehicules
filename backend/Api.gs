@@ -40,6 +40,9 @@ function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000
  else if(p.action==='list'){admin_(s);const ed=p.edition||active_();editionAccess_(s,ed,false);data=rows_('Records').filter(r=>r.edition===ed&&!r.deleted&&!!r.archived===!!p.archived).map(r=>({id:r.id,edition:r.edition,kind:r.kind,state:r.state,initialId:r.initialId,updatedBy:r.updatedBy,updatedAt:r.updatedAt,data:{vehicle:r.data.vehicle},progress:Model.progress(r.data,r.kind,r)}));}
  else if(p.action==='reconcile'){const ed=p.edition||active_();editionAccess_(s,ed,false);if(!Array.isArray(p.ids)||p.ids.length>100)throw Error('Liste de dossiers invalide');data=p.ids.map(id=>{assertId_(id);const r=get_('Records',id),t=get_('Operations','deleted:'+id);if(r)editionAccess_(s,r.edition,false);if(t)editionAccess_(s,t.edition,false);if(r&&r.edition!==ed||t&&t.edition!==ed)throw Error('Édition incohérente');return {id,deleted:!!(r?.deleted||t),revision:r?.revision||null,state:r?.state||null,archived:!!r?.archived,revoked:!!r&&(r.owner!==actorKey_(s)||!!p.leases&&p.leases[id]!==r.lease)};});}
  else if(p.action==='file')data=readFile_(s,p);
+ else if(p.action==='videoList')data=videoList_(s,p);
+ else if(p.action==='videoFiles')data=videoFiles_(s,p);
+ else if(p.action==='videoRead')data=videoRead_(s,p);
  else if(p.action==='editions'){admin_(s);data=rows_('Editions');}
  else if(p.action==='history'){const r=record_(s,p.id,false);data=rows_('Audit').filter(a=>a.record===r.id);}
  else if(p.action==='amendments'){const r=record_(s,p.id,false);data=rows_('Amendments').filter(a=>a.record===r.id);}
@@ -50,6 +53,8 @@ function rpc(p){try{if(!p||typeof p!=='object'||JSON.stringify(p).length>4200000
  if(p.action==='logout'){s.expires=0;return put_('Sessions',s)&&true}
  if(p.action==='setServiceMode')return setServiceMode_(s,p);
  requireProduction_(p);
+ if(p.action==='videoStart')return videoStart_(s,p);
+ if(p.action==='videoStatus'||p.action==='videoChunk')return videoUpload_(s,p);
  if(p.action==='addSigner')return addSigner_(s,p);
  if(p.action==='reopenSignatures')return reopenSignatures_(s,p);
  if(p.action==='activity')return activity_(s,p);

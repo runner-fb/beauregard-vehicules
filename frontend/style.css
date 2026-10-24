@@ -676,3 +676,5 @@ button[data-tone="return"]{background:#edb8cd;color:#52243a;border-color:#d793af
 .damage-dialog #add-photo{align-self:center;min-height:44px}
 .damage-dialog form>.actions{padding-top:16px;border-top:1px solid var(--line);margin-top:18px}
 @media(max-width:600px){.measurement-grid{grid-template-columns:1fr;gap:12px}.compact-form{padding:16px}.home-actions>.hero-action{font-size:19px}.navigation-actions{margin-top:18px}.actions{gap:6px}}
+
+.video-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}.video-capture video,.video-view video{display:block;width:100%;max-height:55vh;background:#18252a;border-radius:12px}.video-file{padding:12px;background:#eaf3f8;border-radius:10px}.video-file input{max-width:100%;font-size:14px}.video-dossier{border-top:1px solid var(--line);margin-top:24px;padding-top:20px}.video-view h2{font-size:16px;overflow-wrap:anywhere}.video-capture [hidden]{display:none!important}
