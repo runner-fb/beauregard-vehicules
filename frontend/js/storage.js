@@ -8,9 +8,9 @@ const Storage=(()=>{
  async function open(){
   if(mode!==true)return;if(db)return db;if(opening)return opening;
   opening=new Promise((resolve,reject)=>{
-   const request=indexedDB.open('beauregard-vehicles-2027',4);let settled=false;
+   const request=indexedDB.open('beauregard-vehicles-2027',5);let settled=false;
    const timer=setTimeout(()=>{settled=true;reject(Error('Base locale indisponible. Ferme les autres onglets de cette application puis réessaie.'));},10000);
-   request.onupgradeneeded=()=>{for(const n of tables)if(!request.result.objectStoreNames.contains(n))request.result.createObjectStore(n,{keyPath:'id'});const videos=request.transaction.objectStore('videos');if(!videos.indexNames.contains('uploads'))videos.createIndex('uploads','uploadId');};
+   request.onupgradeneeded=()=>{for(const n of tables)if(!request.result.objectStoreNames.contains(n))request.result.createObjectStore(n,{keyPath:'id'});const videos=request.transaction.objectStore('videos');if(!videos.indexNames.contains('uploads'))videos.createIndex('uploads','uploadId');const cursor=request.transaction.objectStore('photos').openCursor();cursor.onsuccess=e=>{const c=e.target.result;if(!c)return;if(!c.value.remote)request.transaction.objectStore('operations').put({id:'photo:'+c.value.id,record:c.value.record,type:'photo'});c.continue();};};
    request.onsuccess=()=>{clearTimeout(timer);if(settled){request.result.close();return;}db=request.result;db.onversionchange=()=>{db.close();db=null;};resolve(db);};
    request.onerror=()=>{clearTimeout(timer);reject(storageError(request.error));};
   }).finally(()=>opening=null);return opening;
