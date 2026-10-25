@@ -39,4 +39,5 @@ jobs:
             playwright-report/
             playwright-report-public/
             test-results/
+            test-results-public/
           retention-days: 14
