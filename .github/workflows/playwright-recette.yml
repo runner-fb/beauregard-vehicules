@@ -8,9 +8,9 @@ on:
       - 'package.json'
       - '.github/workflows/playwright-recette.yml'
 jobs:
-  smoke:
+  acceptance:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -18,14 +18,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:e2e:smoke
+      - name: Parcours isolés desktop, Android et iPhone
+        run: npx playwright test --workers=3 --timeout=60000
+        env:
+          BASE_URL: http://127.0.0.1:8765/
+          LOCAL_TEST_SERVER: 1
+      - name: Contrôles publics du site déployé
+        if: always()
+        run: npx playwright test tests/e2e/public-smoke.spec.js --workers=3 --output=test-results-public
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report-public
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/public.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: rapport-playwright
           path: |
             playwright-report/
+            playwright-report-public/
             test-results/
           retention-days: 14
