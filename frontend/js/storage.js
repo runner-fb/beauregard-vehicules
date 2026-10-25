@@ -8,20 +8,20 @@ const Storage=(()=>{
  async function open(){
   if(mode!==true)return;if(db)return db;if(opening)return opening;
   opening=new Promise((resolve,reject)=>{
-   const request=indexedDB.open('beauregard-vehicles-2027',3);let settled=false;
+   const request=indexedDB.open('beauregard-vehicles-2027',4);let settled=false;
    const timer=setTimeout(()=>{settled=true;reject(Error('Base locale indisponible. Ferme les autres onglets de cette application puis réessaie.'));},10000);
-   request.onupgradeneeded=()=>{for(const n of tables)if(!request.result.objectStoreNames.contains(n))request.result.createObjectStore(n,{keyPath:'id'});};
+   request.onupgradeneeded=()=>{for(const n of tables)if(!request.result.objectStoreNames.contains(n))request.result.createObjectStore(n,{keyPath:'id'});const videos=request.transaction.objectStore('videos');if(!videos.indexNames.contains('uploads'))videos.createIndex('uploads','uploadId');};
    request.onsuccess=()=>{clearTimeout(timer);if(settled){request.result.close();return;}db=request.result;db.onversionchange=()=>{db.close();db=null;};resolve(db);};
    request.onerror=()=>{clearTimeout(timer);reject(storageError(request.error));};
   }).finally(()=>opening=null);return opening;
  }
- function queue(t,n,v){if(n!=='drafts')return;const s=t.objectStore('operations'),id='control:'+v.id;
-  if(!v.deleted&&(v.dirty||!v.server||v.pendingFinal||v.localSignatures||v.server?.state==='final'&&!v.server.pdf))s.put({id,record:v.id,generation:v.generation||0,updatedAt:v.updatedAt});else s.delete(id);
+ function queue(t,n,v){if(n==='photos'){const q=t.objectStore('operations'),id='photo:'+v.id;if(v.remote)q.delete(id);else q.put({id,record:v.record,type:'photo'});return;}if(n!=='drafts')return;const s=t.objectStore('operations'),id='control:'+v.id;
+  if(!v.deleted&&(v.dirty||!v.server||v.pendingFinal||Object.entries(v.localSignatures||{}).some(([party,sig])=>v.server?.signatures?.[party]?.op!==sig.op)||v.needsReopen||v.server?.state==='final'&&!v.server.pdf))s.put({id,record:v.id,generation:v.generation||0,updatedAt:v.updatedAt});else s.delete(id);
  }
  async function transaction(name,access,action){
-  await open();return new Promise((resolve,reject)=>{let result;const t=db.transaction(name==='drafts'&&access==='readwrite'?['drafts','operations']:name,access);
+  await open();return new Promise((resolve,reject)=>{let result;const t=db.transaction(['drafts','photos'].includes(name)&&access==='readwrite'?[name,'operations']:name,access);
    t.oncomplete=()=>{resolve(result);if(access==='readwrite')window.dispatchEvent(new CustomEvent('bg-local-change',{detail:{table:name}}));};
-   t.onerror=t.onabort=()=>reject(storageError(t.error));
+   t.onerror=t.onabort=()=>reject(storageError(t.localError||t.error));
    try{action(t.objectStore(name),t,value=>result=value);}catch(e){t.abort();reject(storageError(e));}
   });
  }
@@ -31,8 +31,9 @@ const Storage=(()=>{
  const put=async(n,v)=>{validate(v);if(mode===false){memory[n].set(v.id,structuredClone(v));return v.id;}return transaction(n,'readwrite',(s,t,done)=>{s.put(v);queue(t,n,v);done(v.id);});};
  // Synchronous updater runs inside the read/write transaction: background acknowledgements cannot overwrite newer input.
  const update=async(n,id,fn)=>{if(mode===null)throw Error('Mode de fonctionnement non vérifié');if(mode===false){const value=structuredClone(memory[n].get(id));const next=fn(value);if(next){validate(next);memory[n].set(id,structuredClone(next));}return next;}
-  return transaction(n,'readwrite',(s,t,done)=>{s.get(id).onsuccess=e=>{try{const next=fn(e.target.result);if(next){if(next.then)throw Error('Mise à jour locale asynchrone interdite');validate(next);s.put(next);queue(t,n,next);}done(next);}catch(error){t.abort();}};});
+  return transaction(n,'readwrite',(s,t,done)=>{s.get(id).onsuccess=e=>{try{const next=fn(e.target.result);if(next){if(next.then)throw Error('Mise à jour locale asynchrone interdite');validate(next);s.put(next);queue(t,n,next);}done(next);}catch(error){t.localError=error;t.abort();}};});
  };
- const remove=async(n,id)=>{if(mode===null)throw Error('Mode de fonctionnement non vérifié');if(mode===false)return memory[n].delete(id);return transaction(n,'readwrite',(s,t)=>{s.delete(id);if(n==='drafts')t.objectStore('operations').delete('control:'+id);});};
- return {open,get,all,put,update,remove,configure};
+ const remove=async(n,id)=>{if(mode===null)throw Error('Mode de fonctionnement non vérifié');if(mode===false)return memory[n].delete(id);return transaction(n,'readwrite',(s,t)=>{s.delete(id);if(['drafts','photos'].includes(n))t.objectStore('operations').delete((n==='drafts'?'control:':'photo:')+id);});};
+ const uploads=async()=>mode===true?transaction('videos','readonly',(s,t,done)=>{s.index('uploads').getAll().onsuccess=e=>done(e.target.result);}):(await all('videos')).filter(v=>v.uploadId);
+ return {open,get,all,put,update,remove,configure,uploads};
 })();

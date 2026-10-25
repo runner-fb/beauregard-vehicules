@@ -1,8 +1,10 @@
 /* Separate memory-only trials from the production database and its offline queue. */
-const Service=(()=>{let state=null;function current(){return state}function sandbox(){return state?.production===false}function adopt(next){if(!next||typeof next.production!=='boolean'||!next.epoch)throw Error('Mode serveur invalide');const changed=state&&state.epoch!==next.epoch;state=next;Storage.configure(next.production,next.epoch);if(changed){Sandbox.reset();window.dispatchEvent(new Event('bg-mode-changed'));}return state;}
- async function verify(){const next=await Transport.rawCall('serviceConfig');const old=state;adopt(next);if(old&&old.epoch!==next.epoch)throw Error('MODE_CHANGE : le mode a changé. Les essais ont été abandonnés.');return state;}
+const Service=(()=>{let state=null,checking=null,verifiedAt=0;function current(){return state}function sandbox(){return state?.production===false}function adopt(next){if(!next||typeof next.production!=='boolean'||!next.epoch)throw Error('Mode serveur invalide');const changed=state&&state.epoch!==next.epoch;state=next;try{localStorage.setItem('bg-service-mode',JSON.stringify(next));}catch{}Storage.configure(next.production,next.epoch);if(changed){Sandbox.reset();window.dispatchEvent(new Event('bg-mode-changed'));}return state;}
+ async function verify(){if(checking)return checking;checking=refresh().finally(()=>checking=null);return checking;}
+ async function refresh(){const next=await Transport.rawCall('serviceConfig');verifiedAt=Date.now();const old=state;adopt(next);if(old&&old.epoch!==next.epoch)throw Error('MODE_CHANGE : le mode a changé. Les essais ont été abandonnés.');return state;}
  async function change(production){const next=await Transport.rawCall('setServiceMode',{production,confirm:true,modeEpoch:state.epoch});return adopt(next);}
- return {current,sandbox,verify,change,adopt};})();
+ function restore(){try{const cached=JSON.parse(localStorage.getItem('bg-service-mode'));if(cached)adopt(cached);}catch{}}
+ return {current,sandbox,verify,change,adopt,restore,fresh:()=>Date.now()-verifiedAt<30000};})();
 const Sandbox=(()=>{let records=new Map(),photos=new Map(),signers=[];const clone=Model.clone;const now=()=>new Date().toISOString();const duplicate='Ce véhicule possède déjà un contrôle. Demande à un référent de le débloquer pour commencer une nouvelle fiche.';
  function reset(){records=new Map();photos=new Map();signers=[];}
  function get(id){const r=records.get(id);if(!r||r.deleted)throw Error('DOSSIER_SUPPRIME');return r;}

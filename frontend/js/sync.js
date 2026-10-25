@@ -1,20 +1,58 @@
-const Sync=(()=>{let running=null;let observer=()=>{};const notify=(message,detail)=>observer(message,detail);const copy=Model.clone;
- async function run(id){if(running){await running;if(!id)return;return run(id);}running=work(id).finally(()=>running=null);return running;}
- async function reconcile(onlyId){const session=Auth.current();if(!navigator.onLine||!session?.name)return;
- const local=(await Storage.all('drafts')).filter(d=>Auth.allows(d)&&!d.deleted&&(!onlyId||d.id===onlyId));
- for(const edition of [...new Set(local.map(d=>d.edition))]){const ids=local.filter(d=>d.edition===edition).map(d=>d.id);for(let i=0;i<ids.length;i+=100){const states=await Transport.call('reconcile',{edition,ids:ids.slice(i,i+100),leases:Object.fromEntries(local.map(d=>[d.id,d.server?.lease]))});if(Auth.current()!==session)throw Error('SESSION_EXPIRED');for(const state of states){let d=await Storage.get('drafts',state.id);if(!d)continue;if(state.deleted||state.archived||state.revoked){d.deleted=!!state.deleted;d.suspended=true;d.dirty=false;d.error=state.deleted?'Dossier supprimé sur le serveur':state.archived?'Dossier archivé par un référent':'Autorisation remplacée par un référent';await Storage.put('drafts',d);continue;}if(d.server&&!d.dirty&&state.revision!==null&&state.revision!==d.server.revision){const record=await Transport.call('read',{id:d.id});const fresh=await Storage.get('drafts',d.id);if(Auth.current()!==session)throw Error('SESSION_EXPIRED');if(fresh&&!fresh.dirty){fresh.server=record;fresh.data=copy(record.data);fresh.base=copy(record.data);fresh.updatedAt=record.updatedAt;await Storage.put('drafts',fresh);}}}}}
+/* One persistent, opportunistic worker. Network acknowledgements only patch current local state. */
+const Sync=(()=>{
+ let running=null,observer=()=>{},timer=null,lastCache=0,lastReconcile=0;const copy=Model.clone;
+ const notify=(message,id)=>{observer(message,id);window.dispatchEvent(new Event('bg-sync-change'));};
+ const patch=(id,fn)=>Storage.update('drafts',id,d=>d?fn(d):d);
+ const usable=d=>d&&Auth.allows(d)&&d.edition===Auth.current()?.edition&&!d.deleted&&!d.suspended&&!d.conflicts?.length;
+ const signaturePending=d=>Object.entries(d.localSignatures||{}).some(([p,s])=>d.server?.signatures?.[p]?.op!==s.op);
+ const pending=d=>!d.deleted&&(d.dirty||!d.server||d.needsReopen||d.pendingFinal||signaturePending(d)||d.server?.state==='final'&&!d.server.pdf||d.removedPhotos?.length);
+ function wake(){clearTimeout(timer);timer=setTimeout(()=>run().catch(e=>notify(e.message)),100);}
+ async function error(id,e){if(/dossier a changé|Contrôle verrouillé|Confirmation et révision/.test(e.message)){try{const remote=await Transport.call('read',{id});await patch(id,d=>{if(d.server&&remote.lease!==d.server.lease){d.suspended=true;d.error='AUTORISATION_REMPLACEE';}else d.server=remote;return d;});}catch{}}await patch(id,d=>{d.error=e.message;d.attempts=(d.attempts||0)+1;d.retryAt=Date.now()+Math.min(300000,2000*2**Math.min(d.attempts,7));if(/DOSSIER_SUPPRIME|DOSSIER_ARCHIVE|AUTORISATION_REMPLACEE|ACCES_DOSSIER_REFUSE/.test(e.message))d.suspended=true;return d;});notify(e.message,id);}
+ async function acknowledge(id,result,fn){return patch(id,d=>{d.server=result;d.error=null;d.attempts=0;d.retryAt=0;fn?.(d);return d;});}
+ async function light(d){
+  if(!d.server){const r=await Transport.call('create',{id:d.id,creationOp:d.creationOp||d.id,edition:d.edition,kind:d.kind,data:d.data,initialId:d.initialId||null,withoutInitial:!!d.withoutInitial});if(r.duplicate)throw Error('Un autre contrôle existe. Les données locales sont conservées : contacte un référent.');await acknowledge(d.id,r,f=>{f.base=copy(r.data);f.dirty=true;});return true;}
+  if(d.server.modeEpoch&&d.server.modeEpoch!==Service.current()?.epoch)throw Error('AUTORISATION_REMPLACEE : changement de mode');
+  if(d.needsReopen){if(d.server.state!=='draft'){const r=await Transport.call('reopenSignatures',{id:d.id,lease:d.server.lease,revision:d.server.revision,confirm:true});await acknowledge(d.id,r,f=>{f.needsReopen=false;f.dirty=true;});}else await patch(d.id,f=>{f.needsReopen=false;return f;});return true;}
+  if(!d.dirty)return false;
+  const sent=copy(d.data),generation=d.generation;
+  const r=await Transport.call('save',{id:d.id,lease:d.server.lease,revision:d.server.revision,data:sent});
+  if(r.conflict){await patch(d.id,f=>{if(r.record.lease!==d.server.lease){f.suspended=true;f.error='AUTORISATION_REMPLACEE';return f;}const merge=Model.merge(d.base,f.data,r.record.data);f.server=r.record;f.base=copy(r.record.data);f.data=merge.data;f.conflicts=merge.conflicts;f.dirty=true;if(f.localSignatures&&!Model.same(sent,merge.data)){f.localSignatures={};f.localState=null;f.pendingFinal=false;f.needsReopen=r.record.state!=='draft';f.error='Données modifiées par le serveur : nouvelles signatures nécessaires.';}return f;});return true;}
+  await acknowledge(d.id,r,f=>{f.base=copy(r.data);f.dirty=f.generation!==generation;if(!f.dirty)f.data=copy(r.data);f.lastSync=new Date().toISOString();});return true;
  }
- async function work(onlyId){if(typeof Service!=='undefined'&&Service.sandbox()){for(const d of await Storage.all('drafts')){if((!onlyId||d.id===onlyId)&&d.dirty&&!d.deleted&&!d.suspended){const result=await Transport.call('save',{id:d.id,lease:d.server.lease,revision:d.server.revision,data:d.data});d.server=result;d.base=copy(result.data);d.dirty=false;await Storage.put('drafts',d);}}return;}if(!navigator.onLine||!Auth.current()?.name)return;await reconcile(onlyId);for(const old of await Storage.all('drafts')){if(onlyId&&old.id!==onlyId)continue;let d=await Storage.get('drafts',old.id);if(!d||!Auth.allows(d)||d.edition!==Auth.current()?.edition||d.deleted||d.suspended||!d.dirty||d.conflicts?.length||d.server?.state==='final')continue;try{if(typeof Service!=='undefined'&&d.server?.modeEpoch!==Service.current()?.epoch)throw Error('AUTORISATION_REMPLACEE : changement de mode');notify('Synchronisation…',d.id);
- if(!d.server)throw Error('Réservation serveur absente : demande à un référent de récupérer ce brouillon.');
+ async function heavy(d){
+  for(const id of Model.photos(d.data)){const p=await Storage.get('photos',id);if(p&&!p.remote){const r=await Transport.call('photo',{id,record:d.id,lease:d.server.lease,data:p.data});if(!r?.fileId)throw Error('Confirmation Drive absente');await Storage.update('photos',id,f=>({...f,remote:r.fileId,status:'Enregistrée',error:null}));notify('Photo confirmée sur Drive',d.id);return true;}}
+  return false;
+ }
+ async function finish(d){
+  if(d.dirty||d.needsReopen)return false;
+  for(const [party,sig] of Object.entries(d.localSignatures||{})){if(d.server.signatures?.[party]?.op===sig.op)continue;const r=await Transport.call('sign',{id:d.id,lease:d.server.lease,revision:d.server.revision,party,...sig});await acknowledge(d.id,r,f=>{if(f.localSignatures?.[party]?.op!==sig.op)f.needsReopen=true;});return true;}
+  if(d.pendingFinal&&d.server.state!=='final'){const r=await Transport.call('finalize',{id:d.id,lease:d.server.lease,revision:d.server.revision});await acknowledge(d.id,r,f=>{f.pendingFinal=false;f.localState='final';});return true;}
+  if(d.removedPhotos?.length&&d.server.state==='draft'){const id=d.removedPhotos[0];if(!Model.photos(d.data).includes(id))await Transport.call('deletePhoto',{id,lease:d.server.lease});await patch(d.id,f=>{f.removedPhotos=f.removedPhotos.filter(x=>x!==id);return f;});return true;}
+  return false;
+ }
+ async function documents(d){if(Service.sandbox())return false;if(d.server?.state!=='final'||d.server.pdf)return false;const pdf=await Transport.call('pdf',{id:d.id});if(!pdf?.id||!pdf.sha256)throw Error('PDF non confirmé sur Drive');await patch(d.id,f=>{f.server.pdf=pdf;f.error=null;f.retryAt=0;return f;});return true;}
+ async function cacheReturns(){if(Service.sandbox())return;if(Date.now()-lastCache<60000)return;lastCache=Date.now();const actor=Auth.actor(),edition=Auth.current()?.edition;try{const rows=await Transport.call('returnCandidates');await Storage.put('meta',{id:'returns:'+actor,edition,rows});for(const row of rows){const id='initial:'+edition+':'+row.id;if(await Storage.get('meta',id))continue;const record=await Transport.call('returnInitial',{id:row.id});if(Auth.actor()!==actor)return;await Storage.put('meta',{id,record});break;}}catch(e){notify('Cache restitution : '+e.message);}}
 
- for(const id of Model.photos(d.data)){const p=await Storage.get('photos',id);if(p&&!p.remote){p.status='En cours d’envoi';await Storage.put('photos',p);notify('Envoi d’une photo…',d.id);try{const saved=await Transport.call('photo',{id:p.id,record:d.id,lease:d.server.lease,data:p.data});p.remote=saved.fileId;p.status='Enregistrée';await Storage.put('photos',p);}catch(e){p.status='Erreur';p.error=e.message;await Storage.put('photos',p);throw e;}}}
- // Read the current local document after photo uploads: edits may have continued.
- d=await Storage.get('drafts',d.id);const sent=copy(d.data),generation=d.generation;
- const result=await Transport.call('save',{id:d.id,lease:d.server.lease,revision:d.server.revision,data:sent});let fresh=await Storage.get('drafts',d.id);
- if(result.conflict){if(result.record.lease!==d.server.lease)throw Error('AUTORISATION_REMPLACEE');const merge=Model.merge(d.base,fresh.data,result.record.data);fresh.data=merge.data;fresh.base=copy(result.record.data);fresh.server=result.record;fresh.conflicts=merge.conflicts;fresh.dirty=true;await Storage.put('drafts',fresh);notify(merge.conflicts.length?'Conflits à résoudre':'Modifications indépendantes fusionnées',d.id);if(!merge.conflicts.length)setTimeout(()=>run(),1000);continue;}
- fresh.server=result;fresh.base=copy(result.data);fresh.dirty=fresh.generation!==generation;for(const photoId of Model.photos(fresh.data)){const photo=await Storage.get('photos',photoId);if(photo&&!photo.remote)fresh.dirty=true;}if(!fresh.dirty)fresh.data=copy(result.data);fresh.lastSync=new Date().toISOString();fresh.error=null;await Storage.put('drafts',fresh);
- // Only request remote removal after the server has acknowledged an unreferenced photo.
- if(!fresh.dirty){const referenced=new Set(Model.photos(fresh.data));for(const id of fresh.removedPhotos||[]){if(referenced.has(id))continue;const photo=await Storage.get('photos',id);if(!photo||photo.remote)await Transport.call('deletePhoto',{id,lease:fresh.server.lease});if(photo&&!photo.remote)await Storage.remove('photos',id);}fresh.removedPhotos=[];await Storage.put('drafts',fresh);}notify(fresh.dirty?'Modifications en attente':'Synchronisé',d.id);if(fresh.dirty)setTimeout(()=>run(),1000);
- }catch(e){const f=await Storage.get('drafts',d.id);if(!f)continue;if(/DOSSIER_SUPPRIME|DOSSIER_ARCHIVE|AUTORISATION_REMPLACEE|ACCES_DOSSIER_REFUSE/.test(e.message)){f.deleted=e.message==='DOSSIER_SUPPRIME';f.suspended=true;f.dirty=false;f.error=e.message;await Storage.put('drafts',f);notify(f.error,f.id);continue;}f.error=e.message;if(f.removedPhotos?.length)f.dirty=true;await Storage.put('drafts',f);notify(e.message,d.id);if(e.message==='SESSION_EXPIRED')break;}}
+ async function reconcile(){if(Date.now()-lastReconcile<60000||Service.sandbox())return;lastReconcile=Date.now();const local=(await Storage.all('drafts')).filter(d=>d.server&&Auth.allows(d)&&!d.deleted&&!d.suspended);for(const edition of [...new Set(local.map(d=>d.edition))]){const rows=local.filter(d=>d.edition===edition);for(let i=0;i<rows.length;i+=100){const batch=rows.slice(i,i+100);const states=await Transport.call('reconcile',{edition,ids:batch.map(d=>d.id),leases:Object.fromEntries(batch.map(d=>[d.id,d.server.lease]))});for(const st of states){if(st.deleted||st.archived||st.revoked){await patch(st.id,d=>{d.suspended=true;d.error=st.deleted?'Dossier supprimé sur le serveur — copie locale conservée':st.archived?'Dossier archivé par un référent':'Autorisation remplacée par un référent';return d;});}else{const d=await Storage.get('drafts',st.id);if(d&&!pending(d)&&st.revision!==d.server.revision){const record=await Transport.call('read',{id:d.id});await patch(d.id,f=>{if(!pending(f)){f.server=record;f.data=copy(record.data);f.base=copy(record.data);}return f;});}}}}}}
+ async function work(onlyId){
+  if(!navigator.onLine||!Auth.current()?.name||!Service.current())return;
+  const session=Auth.current();let rounds=0;try{await reconcile();}catch(e){notify(e.message);}
+  while(navigator.onLine&&Auth.current()===session&&rounds++<100){
+   let drafts=(await Storage.all('drafts')).filter(d=>usable(d)&&(!onlyId||d.id===onlyId)&&(!d.retryAt||d.retryAt<=Date.now()));let changed=false;
+   for(const d of drafts)try{if(await light(d)){changed=true;notify('Données en cours de synchronisation',d.id);}}catch(e){await error(d.id,e);}
+   if(changed)continue;
+   drafts=(await Storage.all('drafts')).filter(d=>usable(d)&&d.server&&(!onlyId||d.id===onlyId)&&(!d.retryAt||d.retryAt<=Date.now()));
+   for(const d of drafts)try{if(await heavy(d)||await finish(d)){changed=true;break;}}catch(e){await error(d.id,e);}
+   if(changed)continue;
+   if(!onlyId&&typeof Videos!=='undefined')try{if(await Videos.syncNext()){changed=true;}}catch(e){notify(e.message);}
+   if(changed)continue;
+   for(const d of drafts)try{if(await documents(d)){changed=true;break;}}catch(e){await error(d.id,e);}
+   if(!changed)break;
+  }
+  if(!onlyId){await cacheReturns();const cached=await Storage.get('meta','signers');for(const person of cached?.people||[]){if(!person.pending)continue;try{const remote=await Transport.call('addSigner',{first:person.first,last:person.last});await Storage.update('meta','signers',f=>({...f,people:f.people.map(p=>p.id===person.id?remote:p)}));}catch{}break;}}
  }
- return {run,onChange(fn){observer=fn},busy:()=>!!running};})();
+ async function run(id){if(running)return running;const execute=()=>work(id);running=(navigator.locks?navigator.locks.request('beauregard-sync',{ifAvailable:true},lock=>lock?execute():undefined):execute()).finally(()=>{running=null;notify('Synchronisation actualisée');});notify('Synchronisation en cours');return running;}
+ async function state(){let count=0,problem='';const drafts=await Storage.all('drafts');for(const d of drafts){if(d.deleted)continue;if(pending(d)){count++;if(d.error||d.suspended||d.conflicts?.length)problem=d.error||'Conflit à résoudre';else if(!Auth.allows(d))problem='Reconnexion avec le contrôleur concerné nécessaire';}}const ops=await Storage.all('operations');count+=ops.filter(o=>o.type==='photo'&&!drafts.some(d=>d.id===o.record&&d.deleted)).length;for(const v of await Storage.uploads())if(!v.confirmed){count++;if(v.error)problem=v.error;else if(!v.queued)problem='Vidéo locale à valider';}return {count,active:!!running,problem:problem||(!navigator.onLine?'Connexion indisponible':!Auth.current()?.name?'Reconnexion nécessaire':'' )};}
+ window.addEventListener('online',wake);document.addEventListener('visibilitychange',()=>{if(!document.hidden)wake();});setInterval(wake,15000);
+ return {run,wake,state,pending,onChange(fn){observer=fn},busy:()=>!!running};
+})();
