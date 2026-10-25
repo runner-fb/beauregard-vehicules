@@ -40,7 +40,7 @@ test('vidéo : refus caméra, conservation locale, transfert repris et confirmat
  return original(action,p);
  };});
  await page.locator('[data-action=video]').click();await page.locator('#video-return').click();await page.locator('#video-vehicle').selectOption('closed-pickup');await page.locator('#video-next').click();
- await page.locator('#video-start').click();await expect(page.locator('dialog')).toContainText('Caméra isolée');await page.locator('dialog button').click();
+ const cameraAvailable=await page.evaluate(()=>!!(navigator.mediaDevices?.getUserMedia&&window.MediaRecorder));await page.locator('#video-start').click();await expect(page.locator('dialog')).toContainText(cameraAvailable?'Caméra isolée':'Caméra du téléphone ou vidéo existante');await page.locator('dialog button').click();
  await page.locator('#video-file').setInputFiles({name:'tour.mp4',mimeType:'video/mp4',buffer:videoFixture});await expect(page.locator('#video-save')).toBeEnabled();
  expect(await page.evaluate(async()=>(await Storage.uploads()).find(x=>x.uploadId).count)).toBe(2);
  await page.locator('#video-save').click();await expect(page.locator('dialog')).toContainText('sur cet appareil');await page.locator('dialog button').click();

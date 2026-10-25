@@ -11,8 +11,8 @@ module.exports = defineConfig({
     trace: 'retain-on-failure', screenshot: 'only-on-failure', video: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? 'off' : 'retain-on-failure'
   },
   projects: [
-    { name: 'chromium-desktop', use: { ...devices['Desktop Chrome'], ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}}:{}) } },
-    { name: 'android-mobile', use: { ...devices['Pixel 7'], ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}}:{}) } },
+    { name: 'chromium-desktop', use: { ...devices['Desktop Chrome'], ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}}:{channel:'chromium'}) } },
+    { name: 'android-mobile', use: { ...devices['Pixel 7'], ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}}:{channel:'chromium'}) } },
     { name: 'iphone-mobile', use: { ...devices['iPhone 13'] } }
   ]
 });
