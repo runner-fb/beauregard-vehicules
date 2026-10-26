@@ -43,7 +43,7 @@ const Transport=(()=>{
       const response=await fetch(url.toString(),{method:'GET',cache:'no-store',credentials:'omit',signal:controller.signal});
       if(!response.ok)throw Error('HTTP '+response.status);
       let out;
-      try{out=await response.json()}catch{throw Error('Réponse non JSON : redéploie Api.gs dans Apps Script.');}
+      try{out=await response.json()}catch{throw Error('Réponse du serveur illisible. Réessaie ou contacte un référent.');}
       if(out.requestId&&out.requestId!==requestId)throw Error('Réponse serveur incohérente');
       if(!out.ok)throw Error(out.error||'Erreur serveur');
       return out.data;

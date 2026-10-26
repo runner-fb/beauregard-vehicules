@@ -10,12 +10,12 @@ const Model = (() => {
  const plate=s=>String(s||'').normalize('NFKC').toUpperCase().replace(/[^A-Z0-9]/g,'');
  function newData(kind,vehicle={},initial=null){return {vehicle:{plate:'',brand:'',model:'',color:'',type:'Voiture',...vehicle},mileage:null,fuel:'',meterPhoto:null,fuelPhoto:null,generalPhoto:null,remarks:'',views:Object.fromEntries(views.map(v=>[v,false])),damages:initial?Object.fromEntries(Object.values(initial.damages).map(d=>[d.id,{...clone(d),initial:clone(d),evolution:'',photos:[],comment:'',contest:null}])):{}};}
  function validate(data,kind,historicalPlate=null){const errors=[];const add=(step,field,message)=>errors.push({step,field,message});const v=data.vehicle||{};
- for(const k of ['plate','brand','model','color'])if(!String(v[k]||'').trim())add(1,'vehicle.'+k,({plate:'Immatriculation',brand:'Marque',model:'Modèle',color:'Couleur'})[k]+' manquante');
+ for(const k of ['plate','brand','model','color'])if(!String(v[k]||'').trim())add(1,'vehicle.'+k,({plate:'Immatriculation',brand:'Marque',model:'Modèle',color:'Couleur'})[k]+(k==='model'?' manquant':' manquante'));
  if(!/^[A-Z]{2}[0-9]{3}[A-Z]{2}$/.test(plate(v.plate))&&v.plate!==historicalPlate)add(1,'vehicle.plate','Immatriculation attendue : AA123BB');
  if(!types.includes(v.type))add(1,'vehicle.type','Choisis un type de véhicule');
  if(!Number.isSafeInteger(data.mileage)||data.mileage<0)add(2,'mileage','Saisis un kilométrage entier positif ou nul');
  if(!fuels.includes(data.fuel))add(2,'fuel','Choisis le niveau de carburant');
- if(!data.meterPhoto)add(2,'meterPhoto','Photo compteur manquante');if(!data.fuelPhoto)add(2,'fuelPhoto','Photo jauge manquante');
+ if(!data.meterPhoto)add(2,'meterPhoto','Photo du compteur manquante');if(!data.fuelPhoto)add(2,'fuelPhoto','Photo de la jauge manquante');
  for(const view of views)if(data.views?.[view]!==true)add(view==='interieur'?4:3,view,'Valide la vue '+view);
  const nums=new Set();for(const d of Object.values(data.damages||{})){let step=d.view==='interieur'?4:3;const err=m=>add(step,d.id,'Dommage n°'+d.number+' : '+m);
  if(!views.includes(d.view)||!Number.isFinite(d.x)||!Number.isFinite(d.y)||d.x<0||d.x>1||d.y<0||d.y>1)err('position invalide');
